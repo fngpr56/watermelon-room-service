@@ -12,6 +12,7 @@ export const swaggerSpec = {
     { name: "Staff", description: "Authenticated staff CRUD operations." },
     { name: "Rooms", description: "Authenticated room CRUD operations." },
     { name: "Inventory", description: "Stock and inventory management." },
+    { name: "Requests", description: "Room service requests." }
   ],
   components: {
     securitySchemes: {
@@ -192,7 +193,34 @@ export const swaggerSpec = {
     ],
     required: ["name", "category", "unit", "quantityInStock"]
     },
+  Request: {
+    type: "object",
+    required: ["id", "roomId", "fullRequest", "statusId"],
+    properties: {
+      id: { type: "string", example: "550e8400-e29b-41d4-a716-446655440000" },
+      roomId: { type: "integer", example: 204 },
+      staffId: { type: "integer", nullable: true, example: 3 },
+      fullRequest: { type: "string", example: "2 towels and 1 water bottle" },
+      category: { type: "string", nullable: true, example: "housekeeping" },
+      statusId: { type: "integer", example: 1 },
+      notes: { type: "string", nullable: true, example: "Leave at the door" },
+      requestDate: { type: "string", example: "2026-04-17T12:30:00" },
+      completeDate: { type: "string", nullable: true, example: null }
     },
+    example: {
+      id: "550e8400-e29b-41d4-a716-446655440000",
+      roomId: 204,
+      staffId: 3,
+      fullRequest: "2 towels and 1 water bottle",
+      category: "housekeeping",
+      statusId: 1,
+      notes: "Leave at the door",
+      requestDate: "2026-04-17T12:30:00",
+      completeDate: null
+    }
+  }
+    },
+    
   },
   paths: {
     "/api/staff": {
@@ -565,6 +593,244 @@ export const swaggerSpec = {
       },
       404: {
         description: "Inventory item not found.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+},
+"/api/requests": {
+  get: {
+    tags: ["Requests"],
+    summary: "List requests",
+    security: [{ sessionCookie: [] }],
+    responses: {
+      200: {
+        description: "Requests returned successfully.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/RequestListResponse"
+            }
+          }
+        }
+      },
+      401: {
+        description: "Missing or invalid session cookie.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      403: {
+        description: "Authenticated user is not a staff user.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+
+  post: {
+    tags: ["Requests"],
+    summary: "Create a request",
+    security: [{ sessionCookie: [] }],
+    requestBody: {
+      required: true,
+      content: {
+        "application/json": {
+        schema: {
+        $ref: "#/components/schemas/Request"
+        }
+        }
+      }
+    },
+    responses: {
+      201: {
+        description: "Request created successfully.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/RequestItemResponse"
+            }
+          }
+        }
+      },
+      400: {
+        description: "Payload validation failed.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      401: {
+        description: "Missing or invalid session cookie.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      403: {
+        description: "Authenticated user is not a staff user.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+},
+
+"/api/requests/{requestId}": {
+  put: {
+    tags: ["Requests"],
+    summary: "Update a request",
+    security: [{ sessionCookie: [] }],
+    parameters: [
+      {
+        name: "requestId",
+        in: "path",
+        required: true,
+        schema: {
+        $ref: "#/components/schemas/Request"
+        }
+      }
+    ],
+    requestBody: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: {
+            $ref: "#/components/schemas/RequestUpdateRequest"
+          }
+        }
+      }
+    },
+    responses: {
+      200: {
+        description: "Request updated successfully.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/RequestItemResponse"
+            }
+          }
+        }
+      },
+      400: {
+        description: "Path or body validation failed.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      401: {
+        description: "Missing or invalid session cookie.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      403: {
+        description: "Authenticated user is not a staff user.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      404: {
+        description: "Request was not found.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+
+  delete: {
+    tags: ["Requests"],
+    summary: "Delete a request",
+    security: [{ sessionCookie: [] }],
+    parameters: [
+      {
+        name: "requestId",
+        in: "path",
+        required: true,
+        schema: {
+        $ref: "#/components/schemas/Request"
+        }
+      }
+    ],
+    responses: {
+      204: {
+        description: "Request deleted successfully."
+      },
+      400: {
+        description: "Invalid request id.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      401: {
+        description: "Missing or invalid session cookie.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      403: {
+        description: "Authenticated user is not a staff user.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      404: {
+        description: "Request was not found.",
         content: {
           "application/json": {
             schema: {
