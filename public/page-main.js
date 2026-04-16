@@ -55,4 +55,6 @@ export async function initializeDashboard({ expectedUserType, titlePrefix, metaE
   logoutButton?.addEventListener("click", () => {
     logout();
   });
+
+  return session;
 }

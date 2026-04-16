@@ -9,6 +9,7 @@ import healthRoutes from "./routes/health.routes.js";
 import requestsRoutes from "./routes/requests.routes.js";
 import inventoryRoutes from "./routes/inventory.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import staffRoutes from "./routes/staff.routes.js";
 import pageRoutes from "./routes/page.routes.js";
 import { notFound } from "./middleware/notFound.js";
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -29,6 +30,7 @@ app.use(express.static(publicDir, { index: false }));
 
 app.use("/health", healthRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/staff", staffRoutes);
 app.use("/api/requests", requestsRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/", pageRoutes);
