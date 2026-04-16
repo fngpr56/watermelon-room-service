@@ -11,6 +11,7 @@ export const swaggerSpec = {
   tags: [
     { name: "Staff", description: "Authenticated staff CRUD operations." },
     { name: "Rooms", description: "Authenticated room CRUD operations." },
+    { name: "Inventory", description: "Stock and inventory management." },
   ],
   components: {
     securitySchemes: {
@@ -118,6 +119,79 @@ export const swaggerSpec = {
           item: { $ref: "#/components/schemas/Room" },
         },
       },
+      InventoryItem: {
+      type: "object",
+      required: [
+        "id",
+        "name",
+        "category",
+        "unit",
+        "quantityInStock",
+        "quantityReserved",
+        "lowStockThreshold"
+      ],
+      properties: {
+        id: { type: "integer", example: 1 },
+        name: { type: "string", example: "Water bottle" },
+        category: { type: "string", example: "drinks" },
+        unit: { type: "string", example: "pcs" },
+        quantityInStock: { type: "integer", example: 120 },
+        quantityReserved: { type: "integer", example: 10 },
+        lowStockThreshold: { type: "integer", example: 5 },
+      },
+      },
+
+    InventoryListResponse: {
+    type: "object",
+    required: ["items"],
+    properties: {
+        items: {
+        type: "array",
+        items: { $ref: "#/components/schemas/InventoryItem" }
+        }
+    }
+    },
+
+    InventoryItemResponse: {
+    type: "object",
+    required: ["item"],
+    properties: {
+        item: { $ref: "#/components/schemas/InventoryItem" }
+    }
+    },
+
+    InventoryCreateRequest: {
+    type: "object",
+    required: ["name", "category", "unit", "quantityInStock"],
+    properties: {
+        name: { type: "string", maxLength: 100 },
+        category: { type: "string", maxLength: 50 },
+        unit: { type: "string", maxLength: 30 },
+
+        quantityInStock: { type: "integer", minimum: 0 },
+
+        quantityReserved: {
+        type: "integer",
+        minimum: 0,
+        nullable: true,
+        example: 0
+        },
+
+        lowStockThreshold: {
+        type: "integer",
+        minimum: 0,
+        nullable: true,
+        example: 5
+        }
+    }
+    },
+
+    InventoryUpdateRequest: {
+    allOf: [
+        { $ref: "#/components/schemas/InventoryCreateRequest" }
+    ],
+    required: ["name", "category", "unit", "quantityInStock"]
+    },
     },
   },
   paths: {
@@ -231,5 +305,276 @@ export const swaggerSpec = {
         },
       },
     },
+    "/api/inventory": {
+    get: {
+        tags: ["Inventory"],
+        summary: "List inventory items",
+        security: [{ sessionCookie: [] }],
+        responses: {
+        200: {
+            description: "Inventory list returned successfully.",
+            content: {
+            "application/json": {
+                schema: {
+                $ref: "#/components/schemas/InventoryListResponse"
+                }
+            }
+            }
+        },
+        401: {
+            description: "Missing or invalid session cookie.",
+            content: {
+            "application/json": {
+                schema: {
+                $ref: "#/components/schemas/ErrorResponse"
+                }
+            }
+            }
+        },
+        403: {
+            description: "Not authorized.",
+            content: {
+            "application/json": {
+                schema: {
+                $ref: "#/components/schemas/ErrorResponse"
+                }
+            }
+            }
+        }
+        }
+    },
+
+    post: {
+        tags: ["Inventory"],
+        summary: "Create inventory item",
+        security: [{ sessionCookie: [] }],
+        requestBody: {
+        required: true,
+        content: {
+            "application/json": {
+            schema: {
+                $ref: "#/components/schemas/InventoryCreateRequest"
+            }
+            }
+        }
+        },
+        responses: {
+        201: {
+            description: "Inventory item created successfully.",
+            content: {
+            "application/json": {
+                schema: {
+                $ref: "#/components/schemas/InventoryItemResponse"
+                }
+            }
+            }
+        },
+        400: {
+            description: "Validation error.",
+            content: {
+            "application/json": {
+                schema: {
+                $ref: "#/components/schemas/ErrorResponse"
+                }
+            }
+            }
+        },
+        409: {
+            description: "Inventory item with this name already exists.",
+            content: {
+            "application/json": {
+                schema: {
+                $ref: "#/components/schemas/ErrorResponse"
+                }
+            }
+            }
+        }
+        }
+    }
+    },
+    "/api/inventory/{inventoryId}": {
+  put: {
+    tags: ["Inventory"],
+    summary: "Update inventory item",
+    security: [{ sessionCookie: [] }],
+    parameters: [
+      {
+        name: "inventoryId",
+        in: "path",
+        required: true,
+        schema: {
+          type: "integer",
+          minimum: 1
+        }
+      }
+    ],
+    requestBody: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: {
+            $ref: "#/components/schemas/InventoryUpdateRequest"
+          }
+        }
+      }
+    },
+    responses: {
+      200: {
+        description: "Inventory item updated successfully.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/InventoryItemResponse"
+            }
+          }
+        }
+      },
+      400: {
+        description: "Invalid input.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      404: {
+        description: "Inventory item not found.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+
+  delete: {
+    tags: ["Inventory"],
+    summary: "Delete inventory item",
+    security: [{ sessionCookie: [] }],
+    parameters: [
+      {
+        name: "inventoryId",
+        in: "path",
+        required: true,
+        schema: {
+          type: "integer",
+          minimum: 1
+        }
+      }
+    ],
+    responses: {
+      204: {
+        description: "Inventory item deleted successfully."
+      },
+      404: {
+        description: "Inventory item not found.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+},
+"/api/inventory/{inventoryId}": {
+  put: {
+    tags: ["Inventory"],
+    summary: "Update inventory item",
+    security: [{ sessionCookie: [] }],
+    parameters: [
+      {
+        name: "inventoryId",
+        in: "path",
+        required: true,
+        schema: {
+          type: "integer",
+          minimum: 1
+        }
+      }
+    ],
+    requestBody: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: {
+            $ref: "#/components/schemas/InventoryUpdateRequest"
+          }
+        }
+      }
+    },
+    responses: {
+      200: {
+        description: "Inventory item updated successfully.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/InventoryItemResponse"
+            }
+          }
+        }
+      },
+      400: {
+        description: "Invalid input.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      404: {
+        description: "Inventory item not found.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+
+  delete: {
+    tags: ["Inventory"],
+    summary: "Delete inventory item",
+    security: [{ sessionCookie: [] }],
+    parameters: [
+      {
+        name: "inventoryId",
+        in: "path",
+        required: true,
+        schema: {
+          type: "integer",
+          minimum: 1
+        }
+      }
+    ],
+    responses: {
+      204: {
+        description: "Inventory item deleted successfully."
+      },
+      404: {
+        description: "Inventory item not found.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+}
   },
 };
