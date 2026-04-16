@@ -59,11 +59,21 @@ function populateForm(staffUser) {
   setStatus("Editing staff user. Leave password blank to keep the current password.", "ok");
 }
 
-function createActionButton(label, className, onClick) {
+function createActionButton(label, className, onClick, options = {}) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = className;
   button.textContent = label;
+
+  if (options.title) {
+    button.title = options.title;
+  }
+
+  if (options.disabled) {
+    button.disabled = true;
+    return button;
+  }
+
   button.addEventListener("click", onClick);
   return button;
 }
@@ -113,9 +123,19 @@ function renderTable() {
 
     const actionsCell = document.createElement("td");
     actionsCell.className = "table-actions";
+    const isCurrentStaffUser = Number(staffUser.id) === Number(session.staffId);
+
     actionsCell.append(
       createActionButton("Edit", "secondary table-button", () => populateForm(staffUser)),
-      createActionButton("Delete", "danger table-button", () => deleteStaffUser(staffUser))
+      createActionButton(
+        isCurrentStaffUser ? "Current user" : "Delete",
+        "danger table-button",
+        () => deleteStaffUser(staffUser),
+        {
+          disabled: isCurrentStaffUser,
+          title: isCurrentStaffUser ? "You cannot delete the staff account that is currently signed in." : "Delete staff user",
+        }
+      )
     );
     row.append(actionsCell);
 

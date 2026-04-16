@@ -11,7 +11,17 @@ const pool = mariadb.createPool({
 });
 
 /**
+ * Returns the MariaDB connection pool.
+ * @returns {import("mariadb").Pool}
+ */
+export function getPool() {
+  return pool;
+}
+
+/**
  * Checks database connectivity by running a simple query.
+ * @returns {Promise<void>}
+ * @throws {Error} If the database cannot be reached.
  */
 export async function testDbConnection() {
   let conn;

@@ -40,7 +40,7 @@
 
                 <label class="label form-span-2" for="mailAddress">
                   Email
-                  <input id="mailAddress" name="mailAddress" type="email" maxlength="30" required />
+                  <input id="mailAddress" name="mailAddress" type="email" maxlength="100" required />
                 </label>
 
                 <label class="label" for="password">
@@ -50,7 +50,14 @@
 
                 <label class="label" for="role">
                   Role
-                  <input id="role" name="role" type="text" maxlength="20" required />
+                  <select id="role" name="role" required>
+                    <option value="">Select role</option>
+                    <option value="manager">Manager</option>
+                    <option value="front_desk">Front Desk</option>
+                    <option value="housekeeping">Housekeeping</option>
+                    <option value="room_service">Room Service</option>
+                    <option value="maintenance">Maintenance</option>
+                  </select>
                 </label>
 
                 <label class="label" for="birthday">
