@@ -8,7 +8,7 @@ const baseStaffSchema = z.object({
   lastName: z.string().trim().min(1).max(20),
   birthday: z.string().date().nullable(),
   phoneNumber: z.string().trim().max(15).nullable(),
-  mailAddress: z.string().trim().email().max(30),
+  mailAddress: z.string().trim().email().max(100),
   role: z.string().trim().min(1).max(20),
   dateStart: z.string().date(),
   completedRequest: z.number().int().min(0),

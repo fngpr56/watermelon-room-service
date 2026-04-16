@@ -4,6 +4,7 @@ import { getPool } from "../config/db.js";
 import { ApiError } from "../utils/apiError.js";
 
 function formatStaffUser(row) {
+  // Keep the API response shape consistent with the frontend form fields.
   return {
     id: row.id,
     firstName: row.firstName,
@@ -20,14 +21,14 @@ function formatStaffUser(row) {
 async function getStaffUserById(conn, staffId) {
   const rows = await conn.query(
     `SELECT id,
-            firstName,
-            lastName,
+            first_name AS firstName,
+            last_name AS lastName,
             DATE_FORMAT(birthday, '%Y-%m-%d') AS birthday,
-            phoneNumber,
-            mailAddress,
+            phone_number AS phoneNumber,
+            mail_address AS mailAddress,
             role,
-            DATE_FORMAT(dateStart, '%Y-%m-%d') AS dateStart,
-            completedRequest
+            DATE_FORMAT(date_start, '%Y-%m-%d') AS dateStart,
+            completed_request_count AS completedRequest
      FROM staff
      WHERE id = ?
      LIMIT 1`,
@@ -43,18 +44,20 @@ export async function listStaffUsers() {
 
   try {
     conn = await pool.getConnection();
+
+    // Format SQL dates before they leave the backend so the UI can use them directly.
     const rows = await conn.query(
       `SELECT id,
-              firstName,
-              lastName,
+            first_name AS firstName,
+            last_name AS lastName,
               DATE_FORMAT(birthday, '%Y-%m-%d') AS birthday,
-              phoneNumber,
-              mailAddress,
+            phone_number AS phoneNumber,
+            mail_address AS mailAddress,
               role,
-              DATE_FORMAT(dateStart, '%Y-%m-%d') AS dateStart,
-              completedRequest
+            DATE_FORMAT(date_start, '%Y-%m-%d') AS dateStart,
+            completed_request_count AS completedRequest
        FROM staff
-       ORDER BY lastName ASC, firstName ASC`
+       ORDER BY last_name ASC, first_name ASC`
     );
 
     return rows.map(formatStaffUser);
@@ -71,18 +74,20 @@ export async function createStaffUser(data) {
 
   try {
     conn = await pool.getConnection();
+
+    // Staff passwords are always stored as bcrypt hashes.
     const passwordHash = await bcrypt.hash(data.password, 10);
     const result = await conn.query(
       `INSERT INTO staff (
-        firstName,
-        lastName,
+        first_name,
+        last_name,
         password_hash,
         birthday,
-        phoneNumber,
-        mailAddress,
+        phone_number,
+        mail_address,
         role,
-        dateStart,
-        completedRequest
+        date_start,
+        completed_request_count
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.firstName,
@@ -131,6 +136,7 @@ export async function updateStaffUser(staffId, data) {
     ];
 
     if (data.password) {
+      // Only replace the saved password when a new one is provided.
       const passwordHash = await bcrypt.hash(data.password, 10);
       passwordClause = ", password_hash = ?";
       params.push(passwordHash);
@@ -140,14 +146,14 @@ export async function updateStaffUser(staffId, data) {
 
     await conn.query(
       `UPDATE staff
-       SET firstName = ?,
-           lastName = ?,
+         SET first_name = ?,
+           last_name = ?,
            birthday = ?,
-           phoneNumber = ?,
-           mailAddress = ?,
+           phone_number = ?,
+           mail_address = ?,
            role = ?,
-           dateStart = ?,
-           completedRequest = ?${passwordClause}
+           date_start = ?,
+           completed_request_count = ?${passwordClause}
        WHERE id = ?`,
       params
     );
@@ -162,6 +168,7 @@ export async function updateStaffUser(staffId, data) {
 }
 
 export async function deleteStaffUser(staffId, currentStaffId) {
+  // Prevent the active staff user from deleting their own account.
   if (Number(staffId) === Number(currentStaffId)) {
     throw new ApiError(400, "You cannot delete your own active staff account");
   }
@@ -177,7 +184,11 @@ export async function deleteStaffUser(staffId, currentStaffId) {
       throw new ApiError(404, "Staff user not found");
     }
 
-    await conn.query("DELETE FROM staff WHERE id = ?", [staffId]);
+    const result = await conn.query("DELETE FROM staff WHERE id = ?", [staffId]);
+
+    if (!result.affectedRows) {
+      throw new ApiError(404, "Staff user not found");
+    }
   } finally {
     if (conn) {
       conn.release();
