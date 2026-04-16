@@ -40,7 +40,7 @@
 
                 <label class="label form-span-2" for="mailAddress">
                   Email
-                  <input id="mailAddress" name="mailAddress" type="email" maxlength="30" required />
+                  <input id="mailAddress" name="mailAddress" type="email" maxlength="100" required />
                 </label>
 
                 <label class="label" for="password">
@@ -50,7 +50,15 @@
 
                 <label class="label" for="role">
                   Role
-                  <input id="role" name="role" type="text" maxlength="20" required />
+                  <select id="role" name="role" required>
+                    <option value="">Select role</option>
+                    <option value="manager">Manager</option>
+                    <option value="front_desk">Front Desk</option>
+                    <option value="housekeeping">Housekeeping</option>
+                    <option value="room_service">Room Service</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="attendant">Attendant</option>
+                  </select>
                 </label>
 
                 <label class="label" for="birthday">
@@ -86,7 +94,7 @@
             <div class="section-heading section-heading-row">
               <div>
                 <strong>Staff users</strong>
-                <p class="muted">Authenticated staff can manage staff records here. Room CRUD is intentionally not included.</p>
+                <p class="muted">Authenticated staff can manage staff records here. The signed-in account cannot delete itself.</p>
               </div>
               <span id="staff-count" class="table-count">0 users</span>
             </div>
@@ -105,6 +113,79 @@
                   </tr>
                 </thead>
                 <tbody id="staff-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="management-layout">
+          <article class="tile manager-panel">
+            <div class="section-heading">
+              <strong id="room-form-title">Create room</strong>
+              <p class="muted">Room passwords are hashed on the server before they are stored.</p>
+            </div>
+
+            <form id="room-form" class="manager-form">
+              <input id="room-id" name="roomId" type="hidden" />
+
+              <div class="form-grid">
+                <label class="label" for="roomNumber">
+                  Room number
+                  <input id="roomNumber" name="roomNumber" type="number" min="1" step="1" required />
+                </label>
+
+                <label class="label" for="roomPassword">
+                  Password
+                  <input id="roomPassword" name="password" type="password" minlength="6" autocomplete="new-password" />
+                </label>
+
+                <label class="label form-span-2" for="owner">
+                  Guest or owner name
+                  <input id="owner" name="owner" type="text" maxlength="70" />
+                </label>
+
+                <div class="form-grid room-date-row form-span-2">
+                  <label class="label" for="dateIn">
+                    Check-in
+                    <input id="dateIn" name="dateIn" type="datetime-local" />
+                  </label>
+
+                  <label class="label" for="dateOut">
+                    Check-out
+                    <input id="dateOut" name="dateOut" type="datetime-local" />
+                  </label>
+                </div>
+              </div>
+
+              <div class="button-row">
+                <button class="primary" id="submit-room-button" type="submit">Create room</button>
+                <button class="secondary" id="reset-room-button" type="button">Clear form</button>
+              </div>
+              <p id="room-status" class="status" aria-live="polite"></p>
+            </form>
+          </article>
+
+          <article class="tile manager-panel">
+            <div class="section-heading section-heading-row">
+              <div>
+                <strong>Rooms</strong>
+                <p class="muted">Manage room login records from the same staff dashboard.</p>
+              </div>
+              <span id="room-count" class="table-count">0 rooms</span>
+            </div>
+
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Room</th>
+                    <th>Owner</th>
+                    <th>Check-in</th>
+                    <th>Check-out</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="room-table-body"></tbody>
               </table>
             </div>
           </article>

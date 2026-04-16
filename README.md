@@ -1,178 +1,48 @@
 # Watermelon Room Service
 
-Watermelon Room Service is a hotel room service system. Guests can make requests from their room, staff can see them on a dashboard, and the system tracks inventory. The backend is built with Node.js and MariaDB. Later, the project will also use real-time updates and separate guest and staff interfaces.
+Watermelon Room Service is a hotel operations backend with secure room and staff login, a browser-based staff dashboard, and MariaDB-backed CRUD for staff and rooms.
 
-## What this backend does now
+## Current features
 
-Right now this project includes the backend skeleton plus a simple secure login flow. It already has:
+- Express server with MariaDB connection pooling
+- request logging with request ids
+- bcrypt password verification for login
+- signed HTTP-only cookie sessions
+- guest and staff page routing
+- staff CRUD from the staff dashboard
+- room CRUD from the staff dashboard
+- staff self-delete protection
+- Swagger UI for staff and room APIs
+- Socket.IO bootstrap for future realtime work
 
-- Express server
-- MariaDB connection
-- environment config
-- basic routes
-- DB-backed guest and staff login
-- bcrypt password verification
-- signed HTTP-only session cookie auth
-- simple guest and staff landing pages
-- global error handling
-- Socket.IO setup for future real-time updates
+## Main routes
 
-Current test routes:
-
-- `GET /health`
 - `GET /login`
+- `GET /guest`
+- `GET /staff`
 - `POST /api/auth/login`
+- `POST /api/auth/logout`
 - `GET /api/auth/me`
-- `GET /api/requests`
-- `GET /api/inventory`
-
-## Project structure
-
-```text
-watermelon-room-service/
-├─ src/
-│  ├─ app.js
-│  ├─ server.js
-│  ├─ config/
-│  │  ├─ env.js
-│  │  └─ db.js
-│  ├─ routes/
-│  │  ├─ health.routes.js
-│  │  ├─ auth.routes.js
-│  │  ├─ page.routes.js
-│  │  ├─ requests.routes.js
-│  │  └─ inventory.routes.js
-│  ├─ controllers/
-│  │  ├─ health.controller.js
-│  │  ├─ auth.controller.js
-│  │  ├─ page.controller.js
-│  │  ├─ requests.controller.js
-│  │  └─ inventory.controller.js
-│  ├─ middleware/
-│  │  ├─ errorHandler.js
-│  │  └─ notFound.js
-│  ├─ sockets/
-│  │  └─ index.js
-│  ├─ utils/
-│  │  ├─ apiError.js
-│  │  └─ logger.js
-│  └─ services/
-│     ├─ request.service.js
-│     └─ inventory.service.js
-├─ sql/
-│  └─ schema.sql
-├─ .env.example
-├─ .gitignore
-├─ package.json
-└─ README.md
-```
-
-## File and folder explanation
-
-### `src/app.js`
-
-This builds the Express app.  
-It adds middleware and connects routes.
-
-### `src/server.js`
-
-This starts the server.  
-It also starts Socket.IO and checks database connection.
-
-### `src/config/`
-
-This folder stores project configuration.
-
-- `env.js` reads values from `.env`
-- `db.js` creates the MariaDB connection pool
-
-### `src/routes/`
-
-This folder defines API paths.
-
-- `health.routes.js` handles health checks
-- `auth.routes.js` handles login/logout/session endpoints
-- `page.routes.js` handles the login, guest, and staff pages
-- `requests.routes.js` handles guest requests
-- `inventory.routes.js` handles inventory endpoints
-
-### `src/controllers/`
-
-Controllers receive the HTTP request and return the HTTP response.
-
-- `health.controller.js` returns API status
-- `auth.controller.js` handles login/session responses
-- `page.controller.js` serves the browser pages
-- `requests.controller.js` handles request endpoints
-- `inventory.controller.js` handles inventory endpoints
-
-### `src/services/`
-
-Services will hold business logic.  
-This keeps controllers simple.
-
-Example:
-
-- authentication and session logic
-- request creation logic
-- stock reservation logic
-- fulfillment logic
-
-### `src/middleware/`
-
-This folder contains Express middleware.
-
-- `errorHandler.js` returns safe error responses
-- `notFound.js` handles unknown routes
-
-### `src/sockets/`
-
-This folder handles real-time communication with Socket.IO.
-
-### `src/utils/`
-
-Small shared helper files.
-
-- `apiError.js` creates structured errors
-- `logger.js` prints logs
-
-### `sql/schema.sql`
-
-This file creates the database tables, including the secure `rooms` and `staff` login tables with seeded demo users.
-
-### `.env.example`
-
-This shows which environment variables are needed.
-
-### `.gitignore`
-
-This prevents files like `.env` and `node_modules` from going into Git.
-
-## Why the structure is like this
-
-The project brief says the code must be split properly, not kept in one file.  
-It also says:
-
-- server startup should be separate
-- routes should be grouped by feature
-- database access should be isolated
-- environment config should be centralized
-
-This structure follows those rules. It keeps the project simple and easy to grow.
+- `GET /api/staff`
+- `POST /api/staff`
+- `PUT /api/staff/:staffId`
+- `DELETE /api/staff/:staffId`
+- `GET /api/rooms`
+- `POST /api/rooms`
+- `PUT /api/rooms/:roomId`
+- `DELETE /api/rooms/:roomId`
+- `GET /api-docs`
+- `GET /api-docs.json`
 
 ## Setup
 
-### 1. Install dependencies
+1. Install dependencies.
 
 ```bash
 npm install
 ```
 
-### 2. Create `.env`
-
-Copy `.env.example` to `.env` and fill in your real values.
-
-Example:
+2. Create `.env` from `.env.example`.
 
 ```env
 PORT=3000
@@ -185,107 +55,59 @@ CLIENT_ORIGIN=http://localhost:5173
 SESSION_SECRET=replace_this_with_a_long_random_secret
 ```
 
-### 3. Create the database
-
-In MariaDB:
+3. Create the database.
 
 ```sql
 CREATE DATABASE watermelon_room_service;
 ```
 
-### 4. Run the schema
+4. Import the schema if you want the sample data from the SQL script.
 
 ```bash
 mysql -u root -p watermelon_room_service < sql/schema.sql
 ```
 
-The server also ensures the `rooms` and `staff` auth tables exist on startup and migrates old plaintext `pass` columns to `password_hash` with bcrypt before dropping the plaintext column.
-
-### 5. Start the backend
+5. Start the app.
 
 ```bash
 npm run dev
 ```
 
-## Test the backend
-
-### Health check
+You can also run:
 
 ```bash
-curl http://localhost:3000/health
+npm start
 ```
 
-### Login page
+## Startup behavior
 
-Open `http://localhost:3000/login` in a browser.
+The server creates the `rooms` and `staff` tables if they do not exist and migrates older auth columns to the current snake_case schema.
 
-Demo credentials seeded by default:
+The server does **not** auto-insert sample room or staff records on startup.
 
-- Guest: room `101` with password `101pass`
-- Guest: room `202` with password `202pass`
-- Staff: `alice.porter@hotel.test` with password `alice.staff`
-- Staff: `bob.service@hotel.test` with password `bob.staff`
+Sample data is only inserted when you manually import [sql/schema.sql](sql/schema.sql).
 
-Room numbers redirect to `/guest` after successful login.
-Staff emails redirect to `/staff` after successful login.
+## Logging and errors
 
-### Requests route
+- each request gets an `X-Request-Id` header
+- request logs include the request id, method, path, status, and response time
+- API errors return JSON with `error`, `statusCode`, and `requestId`
+- server logs keep stack traces in development for easier debugging
 
-```bash
-curl http://localhost:3000/api/requests
-```
+## Dashboard behavior
 
-### Inventory route
+The staff dashboard at [public/staff.html](public/staff.html) now manages both staff users and rooms.
 
-```bash
-curl http://localhost:3000/api/inventory
-```
+- staff passwords are hashed on the server
+- room passwords are hashed on the server
+- the staff role field is a dropdown
+- the signed-in staff user cannot delete their own active account
+- room and staff deletes check database `affectedRows` so failed deletes do not silently pass
 
-### Unknown route test
+## Swagger
 
-```bash
-curl http://localhost:3000/not-real
-```
+Swagger UI is available at `http://localhost:3000/api-docs`.
 
-## Current expected results
+The raw OpenAPI document is available at `http://localhost:3000/api-docs.json`.
 
-- `/health` returns API status
-- `/login` serves the login UI
-- `/api/auth/login` verifies a bcrypt hash and sets an HTTP-only signed cookie
-- successful room login redirects the browser to `/guest`
-- successful staff login redirects the browser to `/staff`
-- `/api/requests` returns an empty array for now
-- `/api/inventory` returns an empty array for now
-- wrong routes return structured 404 errors
-
-## Git workflow used in this project
-
-The brief requires a real Git workflow. It says:
-
-- do not commit directly to `main`
-- use feature branches
-- use commit names like `feat(scope): message`
-- keep `main` always working
-
-This project follows that workflow.
-
-### Branch format
-
-- `feature/...`
-- `fix/...`
-
-### Commit format
-
-- `feat(server): add Express bootstrap`
-- `feat(api): add inventory routes`
-- `fix(db): correct connection config`
-
-## Notes
-
-This is still an early backend.  
-Next steps will add:
-
-- request creation
-- stock reservation
-- request status updates
-- room-based WebSocket updates
+The documented protected endpoints use the signed `wrs_session` cookie from `/api/auth/login`.

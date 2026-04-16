@@ -1,18 +1,235 @@
-import swaggerJSDoc from 'swagger-jsdoc';
+const staffRoles = ["manager", "front_desk", "housekeeping", "room_service", "maintenance", "attendant"];
 
-export const swaggerSpec = swaggerJSDoc({
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'Watermelon Room Service API',
-      version: '1.0.0',
-      description: 'API documentation for rooms service',
-    },
-    servers: [
-      {
-        url: 'http://localhost:3000',
-      },
-    ],
+export const swaggerSpec = {
+  openapi: "3.0.3",
+  info: {
+    title: "Watermelon Room Service API",
+    version: "1.0.0",
+    description: "Interactive documentation for the authenticated staff and room management APIs.",
   },
-  apis: ['./src/controllers/*.js'],
-});
+  servers: [{ url: "/" }],
+  tags: [
+    { name: "Staff", description: "Authenticated staff CRUD operations." },
+    { name: "Rooms", description: "Authenticated room CRUD operations." },
+  ],
+  components: {
+    securitySchemes: {
+      sessionCookie: {
+        type: "apiKey",
+        in: "cookie",
+        name: "wrs_session",
+        description: "Signed HTTP-only session cookie returned by POST /api/auth/login.",
+      },
+    },
+    schemas: {
+      ErrorResponse: {
+        type: "object",
+        required: ["error", "statusCode"],
+        properties: {
+          error: { type: "string", example: "Invalid staff payload" },
+          statusCode: { type: "integer", example: 400 },
+        },
+      },
+      StaffUser: {
+        type: "object",
+        required: ["id", "firstName", "lastName", "birthday", "phoneNumber", "mailAddress", "role", "dateStart", "completedRequest"],
+        properties: {
+          id: { type: "integer", example: 3 },
+          firstName: { type: "string", example: "Laura" },
+          lastName: { type: "string", example: "Johnson" },
+          birthday: { type: "string", format: "date", nullable: true, example: "1992-06-15" },
+          phoneNumber: { type: "string", nullable: true, example: "+3725551001" },
+          mailAddress: { type: "string", format: "email", example: "laura@watermelonhotel.com" },
+          role: { type: "string", enum: staffRoles, example: "front_desk" },
+          dateStart: { type: "string", format: "date", example: "2023-01-10" },
+          completedRequest: { type: "integer", minimum: 0, example: 120 },
+        },
+      },
+      StaffCreateRequest: {
+        type: "object",
+        required: ["firstName", "lastName", "mailAddress", "role", "dateStart", "completedRequest", "password"],
+        properties: {
+          firstName: { type: "string", maxLength: 20 },
+          lastName: { type: "string", maxLength: 20 },
+          birthday: { type: "string", format: "date", nullable: true },
+          phoneNumber: { type: "string", nullable: true, maxLength: 15 },
+          mailAddress: { type: "string", format: "email", maxLength: 100 },
+          role: { type: "string", enum: staffRoles },
+          dateStart: { type: "string", format: "date" },
+          completedRequest: { type: "integer", minimum: 0 },
+          password: { type: "string", minLength: 6, maxLength: 72 },
+        },
+      },
+      StaffUpdateRequest: {
+        allOf: [{ $ref: "#/components/schemas/StaffCreateRequest" }],
+        required: ["firstName", "lastName", "mailAddress", "role", "dateStart", "completedRequest"],
+      },
+      StaffListResponse: {
+        type: "object",
+        required: ["items"],
+        properties: {
+          items: { type: "array", items: { $ref: "#/components/schemas/StaffUser" } },
+        },
+      },
+      StaffItemResponse: {
+        type: "object",
+        required: ["item"],
+        properties: {
+          item: { $ref: "#/components/schemas/StaffUser" },
+        },
+      },
+      Room: {
+        type: "object",
+        required: ["id", "roomNumber", "owner", "dateIn", "dateOut"],
+        properties: {
+          id: { type: "integer", example: 4 },
+          roomNumber: { type: "integer", example: 204 },
+          owner: { type: "string", nullable: true, example: "Emily Brown" },
+          dateIn: { type: "string", nullable: true, example: "2026-04-16T16:00" },
+          dateOut: { type: "string", nullable: true, example: "2026-04-22T11:00" },
+        },
+      },
+      RoomCreateRequest: {
+        type: "object",
+        required: ["roomNumber", "password"],
+        properties: {
+          roomNumber: { type: "integer", minimum: 1, example: 204 },
+          owner: { type: "string", nullable: true, maxLength: 70 },
+          dateIn: { type: "string", nullable: true, example: "2026-04-16T16:00" },
+          dateOut: { type: "string", nullable: true, example: "2026-04-22T11:00" },
+          password: { type: "string", minLength: 6, maxLength: 72 },
+        },
+      },
+      RoomUpdateRequest: {
+        allOf: [{ $ref: "#/components/schemas/RoomCreateRequest" }],
+        required: ["roomNumber"],
+      },
+      RoomListResponse: {
+        type: "object",
+        required: ["items"],
+        properties: {
+          items: { type: "array", items: { $ref: "#/components/schemas/Room" } },
+        },
+      },
+      RoomItemResponse: {
+        type: "object",
+        required: ["item"],
+        properties: {
+          item: { $ref: "#/components/schemas/Room" },
+        },
+      },
+    },
+  },
+  paths: {
+    "/api/staff": {
+      get: {
+        tags: ["Staff"],
+        summary: "List staff users",
+        security: [{ sessionCookie: [] }],
+        responses: {
+          200: { description: "Staff users returned successfully.", content: { "application/json": { schema: { $ref: "#/components/schemas/StaffListResponse" } } } },
+          401: { description: "Missing or invalid session cookie.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          403: { description: "Authenticated user is not a staff user.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+        },
+      },
+      post: {
+        tags: ["Staff"],
+        summary: "Create a staff user",
+        security: [{ sessionCookie: [] }],
+        requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/StaffCreateRequest" } } } },
+        responses: {
+          201: { description: "Staff user created successfully.", content: { "application/json": { schema: { $ref: "#/components/schemas/StaffItemResponse" } } } },
+          400: { description: "Payload validation failed.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          401: { description: "Missing or invalid session cookie.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          403: { description: "Authenticated user is not a staff user.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          409: { description: "A staff user with the same email already exists.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+        },
+      },
+    },
+    "/api/staff/{staffId}": {
+      put: {
+        tags: ["Staff"],
+        summary: "Update a staff user",
+        security: [{ sessionCookie: [] }],
+        parameters: [{ name: "staffId", in: "path", required: true, schema: { type: "integer", minimum: 1 } }],
+        requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/StaffUpdateRequest" } } } },
+        responses: {
+          200: { description: "Staff user updated successfully.", content: { "application/json": { schema: { $ref: "#/components/schemas/StaffItemResponse" } } } },
+          400: { description: "Path or body validation failed.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          401: { description: "Missing or invalid session cookie.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          403: { description: "Authenticated user is not a staff user.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          404: { description: "Staff user was not found.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          409: { description: "A staff user with the same email already exists.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+        },
+      },
+      delete: {
+        tags: ["Staff"],
+        summary: "Delete a staff user",
+        security: [{ sessionCookie: [] }],
+        parameters: [{ name: "staffId", in: "path", required: true, schema: { type: "integer", minimum: 1 } }],
+        responses: {
+          204: { description: "Staff user deleted successfully." },
+          400: { description: "Invalid staff id or self-delete attempt.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          401: { description: "Missing or invalid session cookie.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          403: { description: "Authenticated user is not a staff user.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          404: { description: "Staff user was not found.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+        },
+      },
+    },
+    "/api/rooms": {
+      get: {
+        tags: ["Rooms"],
+        summary: "List rooms",
+        security: [{ sessionCookie: [] }],
+        responses: {
+          200: { description: "Rooms returned successfully.", content: { "application/json": { schema: { $ref: "#/components/schemas/RoomListResponse" } } } },
+          401: { description: "Missing or invalid session cookie.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          403: { description: "Authenticated user is not a staff user.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+        },
+      },
+      post: {
+        tags: ["Rooms"],
+        summary: "Create a room",
+        security: [{ sessionCookie: [] }],
+        requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/RoomCreateRequest" } } } },
+        responses: {
+          201: { description: "Room created successfully.", content: { "application/json": { schema: { $ref: "#/components/schemas/RoomItemResponse" } } } },
+          400: { description: "Payload validation failed.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          401: { description: "Missing or invalid session cookie.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          403: { description: "Authenticated user is not a staff user.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          409: { description: "A room with the same room number already exists.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+        },
+      },
+    },
+    "/api/rooms/{roomId}": {
+      put: {
+        tags: ["Rooms"],
+        summary: "Update a room",
+        security: [{ sessionCookie: [] }],
+        parameters: [{ name: "roomId", in: "path", required: true, schema: { type: "integer", minimum: 1 } }],
+        requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/RoomUpdateRequest" } } } },
+        responses: {
+          200: { description: "Room updated successfully.", content: { "application/json": { schema: { $ref: "#/components/schemas/RoomItemResponse" } } } },
+          400: { description: "Path or body validation failed.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          401: { description: "Missing or invalid session cookie.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          403: { description: "Authenticated user is not a staff user.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          404: { description: "Room was not found.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          409: { description: "A room with the same room number already exists.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+        },
+      },
+      delete: {
+        tags: ["Rooms"],
+        summary: "Delete a room",
+        security: [{ sessionCookie: [] }],
+        parameters: [{ name: "roomId", in: "path", required: true, schema: { type: "integer", minimum: 1 } }],
+        responses: {
+          204: { description: "Room deleted successfully." },
+          400: { description: "Invalid room id.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          401: { description: "Missing or invalid session cookie.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          403: { description: "Authenticated user is not a staff user.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+          404: { description: "Room was not found.", content: { "application/json": { schema: { $ref: "#/components/schemas/ErrorResponse" } } } },
+        },
+      },
+    },
+  },
+};

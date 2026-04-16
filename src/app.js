@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
+import { randomUUID } from "crypto";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -12,15 +13,24 @@ import pageRoutes from "./routes/page.routes.js";
 import roomsRoutes from "./routes/rooms.routes.js";
 import { notFound } from "./middleware/notFound.js";
 import { errorHandler } from "./middleware/errorHandler.js";
-import swaggerUi from 'swagger-ui-express';
-import { swaggerSpec } from './config/swagger.js';
+import { logger } from "./utils/logger.js";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger.js";
 
 const app = express();
 const publicDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
+const requestLogStream = {
+  write(message) {
+    logger.http(message.trim());
+  },
+};
 
+// MariaDB returns some counts as BigInt, so convert them before sending JSON.
 BigInt.prototype.toJSON = function () {
   return Number(this);
 };
+
+morgan.token("requestId", (req) => req.requestId || "-");
 
 app.use(
   cors({
@@ -29,16 +39,31 @@ app.use(
   })
 );
 
+// Give each request a small id so logs and error responses can be matched.
+app.use((req, res, next) => {
+  req.requestId = randomUUID();
+  res.setHeader("X-Request-Id", req.requestId);
+  next();
+});
+
 app.use(express.json());
-app.use(morgan("dev"));
+app.use(morgan(":requestId :method :url :status :response-time ms", { stream: requestLogStream }));
+
+// Serve the plain browser files from /public.
 app.use(express.static(publicDir, { index: false }));
 
+app.get("/api-docs.json", (req, res) => {
+  res.json(swaggerSpec);
+});
+
+// API routes come before page routes so the browser dashboard can call them.
 app.use("/api/auth", authRoutes);
 app.use("/api/staff", staffRoutes);
+app.use("/api/rooms", roomsRoutes);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, { customSiteTitle: "API Docs" }));
 app.use("/", pageRoutes);
-app.use('/api/rooms', roomsRoutes);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+// Fallback handlers stay last.
 app.use(notFound);
 app.use(errorHandler);
 

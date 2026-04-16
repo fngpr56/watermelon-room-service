@@ -9,6 +9,7 @@ import { testDbConnection } from "./config/db.js";
 import { initializeAuthSchema } from "./services/auth-schema.service.js";
 
 async function bootstrap() {
+  // Make sure the database is ready before the server accepts requests.
   await testDbConnection();
   await initializeAuthSchema();
 
@@ -18,6 +19,13 @@ async function bootstrap() {
 
   const server = http.createServer(app);
 
+  // Log startup problems like port conflicts in one place.
+  server.on("error", (error) => {
+    logger.error("HTTP server error", error);
+    process.exit(1);
+  });
+
+  // Socket.IO shares the same HTTP server as Express.
   const io = new Server(server, {
     cors: {
       origin: env.clientOrigin,
@@ -31,6 +39,7 @@ async function bootstrap() {
   });
 }
 
+// Stop startup if any required setup step fails.
 bootstrap().catch((error) => {
   logger.error("Failed to start server", error);
   process.exit(1);

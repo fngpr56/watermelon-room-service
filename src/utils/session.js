@@ -28,6 +28,7 @@ function parseCookieHeader(cookieHeader) {
 }
 
 export function createSession(user) {
+  // Store the expiry time inside the signed session payload.
   return {
     ...user,
     exp: Date.now() + SESSION_TTL_SECONDS * 1000,
@@ -35,6 +36,7 @@ export function createSession(user) {
 }
 
 export function serializeSessionCookie(session, secret, secure = false) {
+  // The cookie stores the payload plus a signature to catch tampering.
   const payload = toBase64Url(JSON.stringify(session));
   const signature = signPayload(payload, secret);
   const parts = [
@@ -86,12 +88,14 @@ export function readSessionFromRequest(req, secret) {
   const actual = Buffer.from(signature);
   const expected = Buffer.from(expectedSignature);
 
+  // Reject broken or forged cookies.
   if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) {
     return null;
   }
 
   const session = JSON.parse(fromBase64Url(payload));
 
+  // Expired cookies behave like missing cookies.
   if (!session.exp || session.exp < Date.now()) {
     return null;
   }

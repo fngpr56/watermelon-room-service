@@ -3,13 +3,15 @@ import { z } from "zod";
 import { deleteStaffUser, listStaffUsers, createStaffUser, updateStaffUser } from "../services/staff.service.js";
 import { ApiError } from "../utils/apiError.js";
 
+const staffRoleValues = ["manager", "front_desk", "housekeeping", "room_service", "maintenance", "attendant"];
+
 const baseStaffSchema = z.object({
   firstName: z.string().trim().min(1).max(20),
   lastName: z.string().trim().min(1).max(20),
   birthday: z.string().date().nullable(),
   phoneNumber: z.string().trim().max(15).nullable(),
-  mailAddress: z.string().trim().email().max(30),
-  role: z.string().trim().min(1).max(20),
+  mailAddress: z.string().trim().email().max(100),
+  role: z.enum(staffRoleValues),
   dateStart: z.string().date(),
   completedRequest: z.number().int().min(0),
 });
@@ -37,6 +39,7 @@ function normalizePayload(body) {
     ...body,
     birthday: body?.birthday || null,
     phoneNumber: body?.phoneNumber || null,
+    role: String(body?.role || "").trim(),
     completedRequest: Number(body?.completedRequest),
   };
 }

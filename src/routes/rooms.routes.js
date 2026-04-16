@@ -1,16 +1,15 @@
-import express from 'express';
-import {
-  getRooms,
-  createRoom,
-  updateRoom,
-  deleteRoom
-} from '../controllers/rooms.controller.js';
+import { Router } from "express";
 
-const router = express.Router();
+import { createRoomRecord, getRooms, removeRoom, updateRoomRecord } from "../controllers/rooms.controller.js";
+import { requireApiRole } from "../middleware/auth.js";
 
-router.get('/', getRooms);
-router.post('/', createRoom);
-router.put('/:id', updateRoom);
-router.delete('/:id', deleteRoom);
+const router = Router();
+
+router.use(requireApiRole("staff"));
+
+router.get("/", getRooms);
+router.post("/", createRoomRecord);
+router.put("/:roomId", updateRoomRecord);
+router.delete("/:roomId", removeRoom);
 
 export default router;

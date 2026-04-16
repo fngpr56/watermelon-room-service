@@ -10,6 +10,7 @@ function normalizeIdentifier(identifier) {
 }
 
 export function detectIdentifierType(identifier) {
+  // Room logins use digits only. Staff logins use email.
   const normalized = normalizeIdentifier(identifier);
 
   if (ROOM_NUMBER_PATTERN.test(normalized)) {
@@ -49,6 +50,7 @@ export async function authenticateUser(identifier, password) {
     conn = await pool.getConnection();
 
     if (identifierType === "room") {
+      // Room login sends guests to the guest page.
       const rows = await conn.query(
         `SELECT id, room_number, owner, password_hash
          FROM rooms
@@ -77,10 +79,16 @@ export async function authenticateUser(identifier, password) {
       };
     }
 
+    // Staff login sends staff users to the dashboard.
     const rows = await conn.query(
-      `SELECT id, firstName, lastName, mailAddress, role, password_hash
+      `SELECT id,
+              first_name AS firstName,
+              last_name AS lastName,
+              mail_address AS mailAddress,
+              role,
+              password_hash
        FROM staff
-       WHERE LOWER(mailAddress) = LOWER(?)
+       WHERE LOWER(mail_address) = LOWER(?)
        LIMIT 1`,
       [normalizedIdentifier]
     );

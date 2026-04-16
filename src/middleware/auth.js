@@ -16,6 +16,7 @@ export function requireRole(role) {
   return function authorize(req, res, next) {
     const session = getSession(req);
 
+    // Page routes send the user back to the login screen.
     if (!session || session.userType !== role) {
       return res.redirect("/login");
     }
@@ -29,6 +30,7 @@ export function requireApiRole(role) {
   return function authorize(req, res, next) {
     const session = getSession(req);
 
+    // API routes return JSON errors instead of redirects.
     if (!session) {
       return rejectApiRequest(res, 401, "Not authenticated");
     }

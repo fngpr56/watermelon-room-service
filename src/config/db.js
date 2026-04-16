@@ -1,6 +1,7 @@
 import * as mariadb from "mariadb";
 import { env } from "./env.js";
 
+// Reuse one shared pool across the whole app.
 const pool = mariadb.createPool({
   host: env.dbHost,
   port: env.dbPort,
@@ -9,6 +10,10 @@ const pool = mariadb.createPool({
   password: env.dbPassword,
   connectionLimit: 5,
 });
+
+export function getPool() {
+  return pool;
+}
 
 /**
  * Checks database connectivity by running a simple query.
@@ -19,7 +24,9 @@ export async function testDbConnection() {
     conn = await pool.getConnection();
     await conn.query("SELECT 1");
   } finally {
-    if (conn) conn.release();
+    if (conn) {
+      conn.release();
+    }
   }
 }
 
