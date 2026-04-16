@@ -14,4 +14,6 @@ export const env = {
   dbUser: process.env.DB_USER || "root",
   dbPassword: process.env.DB_PASSWORD || "",
   clientOrigin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+  nodeEnv: process.env.NODE_ENV || "development",
+  sessionSecret: process.env.SESSION_SECRET || "change-me-in-production",
 };
