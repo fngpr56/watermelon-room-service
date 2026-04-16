@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Staff Dashboard</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card page-panel page-layout">
+        <div>
+          <span class="eyebrow">Staff Area</span>
+          <h2 id="page-title">Staff dashboard</h2>
+          <p class="muted">Create, update, and delete staff users from the authenticated staff dashboard.</p>
+        </div>
+
+        <div class="meta" id="meta"></div>
+
+        <section class="management-layout">
+          <article class="tile manager-panel">
+            <div class="section-heading">
+              <strong id="form-title">Create staff user</strong>
+              <p class="muted">Passwords are hashed on the server with bcrypt before they are stored.</p>
+            </div>
+
+            <form id="staff-form" class="manager-form">
+              <input id="staff-id" name="staffId" type="hidden" />
+
+              <div class="form-grid">
+                <label class="label" for="firstName">
+                  First name
+                  <input id="firstName" name="firstName" type="text" maxlength="20" required />
+                </label>
+
+                <label class="label" for="lastName">
+                  Last name
+                  <input id="lastName" name="lastName" type="text" maxlength="20" required />
+                </label>
+
+                <label class="label form-span-2" for="mailAddress">
+                  Email
+                  <input id="mailAddress" name="mailAddress" type="email" maxlength="30" required />
+                </label>
+
+                <label class="label" for="password">
+                  Password
+                  <input id="password" name="password" type="password" minlength="6" autocomplete="new-password" />
+                </label>
+
+                <label class="label" for="role">
+                  Role
+                  <input id="role" name="role" type="text" maxlength="20" required />
+                </label>
+
+                <label class="label" for="birthday">
+                  Birthday
+                  <input id="birthday" name="birthday" type="date" />
+                </label>
+
+                <label class="label" for="dateStart">
+                  Start date
+                  <input id="dateStart" name="dateStart" type="date" required />
+                </label>
+
+                <label class="label form-span-2" for="phoneNumber">
+                  Phone number
+                  <input id="phoneNumber" name="phoneNumber" type="text" maxlength="15" />
+                </label>
+
+                <label class="label" for="completedRequest">
+                  Completed requests
+                  <input id="completedRequest" name="completedRequest" type="number" min="0" step="1" value="0" required />
+                </label>
+              </div>
+
+              <div class="button-row">
+                <button class="primary" id="submit-staff-button" type="submit">Create staff user</button>
+                <button class="secondary" id="reset-staff-button" type="button">Clear form</button>
+              </div>
+              <p id="staff-status" class="status" aria-live="polite"></p>
+            </form>
+          </article>
+
+          <article class="tile manager-panel">
+            <div class="section-heading section-heading-row">
+              <div>
+                <strong>Staff users</strong>
+                <p class="muted">Authenticated staff can manage staff records here. Room CRUD is intentionally not included.</p>
+              </div>
+              <span id="staff-count" class="table-count">0 users</span>
+            </div>
+
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Phone</th>
+                    <th>Started</th>
+                    <th>Completed</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="staff-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <div class="button-row">
+          <button class="secondary" id="logout-button" type="button">Log out</button>
+        </div>
+        <p id="status" class="status" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <script type="module" src="/staff-main.js"></script>
+  </body>
+</html>

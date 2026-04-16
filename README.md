@@ -4,18 +4,25 @@ Watermelon Room Service is a hotel room service system. Guests can make requests
 
 ## What this backend does now
 
-Right now this project is only the backend skeleton. It already has:
+Right now this project includes the backend skeleton plus a simple secure login flow. It already has:
 
 - Express server
 - MariaDB connection
 - environment config
 - basic routes
+- DB-backed guest and staff login
+- bcrypt password verification
+- signed HTTP-only session cookie auth
+- simple guest and staff landing pages
 - global error handling
 - Socket.IO setup for future real-time updates
 
 Current test routes:
 
 - `GET /health`
+- `GET /login`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
 - `GET /api/requests`
 - `GET /api/inventory`
 
@@ -31,10 +38,14 @@ watermelon-room-service/
 │  │  └─ db.js
 │  ├─ routes/
 │  │  ├─ health.routes.js
+│  │  ├─ auth.routes.js
+│  │  ├─ page.routes.js
 │  │  ├─ requests.routes.js
 │  │  └─ inventory.routes.js
 │  ├─ controllers/
 │  │  ├─ health.controller.js
+│  │  ├─ auth.controller.js
+│  │  ├─ page.controller.js
 │  │  ├─ requests.controller.js
 │  │  └─ inventory.controller.js
 │  ├─ middleware/
@@ -80,6 +91,8 @@ This folder stores project configuration.
 This folder defines API paths.
 
 - `health.routes.js` handles health checks
+- `auth.routes.js` handles login/logout/session endpoints
+- `page.routes.js` handles the login, guest, and staff pages
 - `requests.routes.js` handles guest requests
 - `inventory.routes.js` handles inventory endpoints
 
@@ -88,6 +101,8 @@ This folder defines API paths.
 Controllers receive the HTTP request and return the HTTP response.
 
 - `health.controller.js` returns API status
+- `auth.controller.js` handles login/session responses
+- `page.controller.js` serves the browser pages
 - `requests.controller.js` handles request endpoints
 - `inventory.controller.js` handles inventory endpoints
 
@@ -98,6 +113,7 @@ This keeps controllers simple.
 
 Example:
 
+- authentication and session logic
 - request creation logic
 - stock reservation logic
 - fulfillment logic
@@ -122,7 +138,7 @@ Small shared helper files.
 
 ### `sql/schema.sql`
 
-This file creates the database tables.
+This file creates the database tables, including the secure `rooms` and `staff` login tables with seeded demo users.
 
 ### `.env.example`
 
@@ -166,6 +182,7 @@ DB_NAME=watermelon_room_service
 DB_USER=root
 DB_PASSWORD=your_password_here
 CLIENT_ORIGIN=http://localhost:5173
+SESSION_SECRET=replace_this_with_a_long_random_secret
 ```
 
 ### 3. Create the database
@@ -182,6 +199,8 @@ CREATE DATABASE watermelon_room_service;
 mysql -u root -p watermelon_room_service < sql/schema.sql
 ```
 
+The server also ensures the `rooms` and `staff` auth tables exist on startup and migrates old plaintext `pass` columns to `password_hash` with bcrypt before dropping the plaintext column.
+
 ### 5. Start the backend
 
 ```bash
@@ -195,6 +214,20 @@ npm run dev
 ```bash
 curl http://localhost:3000/health
 ```
+
+### Login page
+
+Open `http://localhost:3000/login` in a browser.
+
+Demo credentials seeded by default:
+
+- Guest: room `101` with password `101pass`
+- Guest: room `202` with password `202pass`
+- Staff: `alice.porter@hotel.test` with password `alice.staff`
+- Staff: `bob.service@hotel.test` with password `bob.staff`
+
+Room numbers redirect to `/guest` after successful login.
+Staff emails redirect to `/staff` after successful login.
 
 ### Requests route
 
@@ -217,6 +250,10 @@ curl http://localhost:3000/not-real
 ## Current expected results
 
 - `/health` returns API status
+- `/login` serves the login UI
+- `/api/auth/login` verifies a bcrypt hash and sets an HTTP-only signed cookie
+- successful room login redirects the browser to `/guest`
+- successful staff login redirects the browser to `/staff`
 - `/api/requests` returns an empty array for now
 - `/api/inventory` returns an empty array for now
 - wrong routes return structured 404 errors
@@ -245,10 +282,9 @@ This project follows that workflow.
 
 ## Notes
 
-This is only the first backend skeleton.  
+This is still an early backend.  
 Next steps will add:
 
-- real database reads
 - request creation
 - stock reservation
 - request status updates
