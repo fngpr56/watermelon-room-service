@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Guest Dashboard</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card page-panel page-layout">
+        <div>
+          <span class="eyebrow">Guest Area</span>
+          <h2 id="page-title">Guest dashboard</h2>
+          <p class="muted">This is the post-login landing page for room guests.</p>
+        </div>
+
+        <div class="meta" id="meta"></div>
+
+        <section class="grid">
+          <article class="tile">
+            <strong>Room service requests</strong>
+            <p>Next step: connect this page to the request creation flow.</p>
+          </article>
+          <article class="tile">
+            <strong>Stay details</strong>
+            <p>Your room information comes from the authenticated room record.</p>
+          </article>
+        </section>
+
+        <div class="button-row">
+          <button class="secondary" id="logout-button" type="button">Log out</button>
+        </div>
+        <p id="status" class="status" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <script type="module" src="/guest-main.js"></script>
+  </body>
+</html>
