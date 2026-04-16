@@ -145,6 +145,20 @@ export async function initializeAuthSchema() {
     conn = await pool.getConnection();
     await ensureRoomsTable(conn);
     await ensureStaffTable(conn);
+    // Ensure a test admin account exists on application startup.
+    // Password is intentionally a simple value for local/dev use only.
+    const adminEmail = 'test@test.com';
+    const adminPassword = 'test.';
+    const existing = await conn.query("SELECT id FROM staff WHERE LOWER(mail_address) = LOWER(?) LIMIT 1", [adminEmail]);
+    if (!existing || !existing[0]) {
+      const passwordHash = await bcrypt.hash(adminPassword, 10);
+      const dateStart = new Date().toISOString().slice(0, 10);
+      await conn.query(
+        `INSERT INTO staff (first_name, last_name, password_hash, birthday, phone_number, mail_address, role, date_start, completed_request_count)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ['Test', 'Admin', passwordHash, null, null, adminEmail, 'manager', dateStart, 0]
+      );
+    }
   } finally {
     if (conn) {
       conn.release();

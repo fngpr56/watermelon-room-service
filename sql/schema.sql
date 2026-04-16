@@ -164,7 +164,8 @@ INSERT INTO `rooms` (`id`, `room_number`, `password_hash`, `owner`, `date_in`, `
 INSERT INTO `staff` (`id`, `first_name`, `last_name`, `password_hash`, `birthday`, `phone_number`, `mail_address`, `role`, `date_start`, `completed_request_count`) VALUES
 (1, 'Laura', 'Johnson', '$2b$12$kQw7mQ3v3lR8N5k6U1wD4e9H7q2J8m3L0pXrVh4tYc7nB2sF1gA1K', '1992-06-15', '+3725551001', 'laura@watermelonhotel.com', 'front_desk', '2023-01-10', 120),
 (2, 'Mark', 'Taylor', '$2b$12$kQw7mQ3v3lR8N5k6U1wD4e9H7q2J8m3L0pXrVh4tYc7nB2sF1gA1K', '1988-11-02', '+3725551002', 'mark@watermelonhotel.com', 'housekeeping', '2022-08-01', 215),
-(3, 'Sofia', 'Wilson', '$2b$12$kQw7mQ3v3lR8N5k6U1wD4e9H7q2J8m3L0pXrVh4tYc7nB2sF1gA1K', '1995-03-09', '+3725551003', 'sofia@watermelonhotel.com', 'manager', '2021-05-20', 340);
+(3, 'Sofia', 'Wilson', '$2b$12$kQw7mQ3v3lR8N5k6U1wD4e9H7q2J8m3L0pXrVh4tYc7nB2sF1gA1K', '1995-03-09', '+3725551003', 'sofia@watermelonhotel.com', 'manager', '2021-05-20', 340),
+(4, 'Test', 'Admin', '$2b$10$hHW.7x0ViintgwsWZpdu7.IunQh8Gxjz01R/spZP3OcdKTIapoJsu', NULL, NULL, 'test@test.com', 'manager', '2026-04-16', 0);
 
 INSERT INTO `inventory_items` (`id`, `name`, `category`, `unit`, `quantity_in_stock`, `quantity_reserved`, `low_stock_threshold`) VALUES
 (1, 'Bottle of Water', 'room_service', 'bottle', 40, 2, 10),
