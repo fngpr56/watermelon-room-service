@@ -40,8 +40,6 @@ CREATE TABLE `inventory_items` (
   `quantity_in_stock` INT NOT NULL DEFAULT 0,
   `quantity_reserved` INT NOT NULL DEFAULT 0,
   `low_stock_threshold` INT NOT NULL DEFAULT 0,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_inventory_name` (`name`),
   CONSTRAINT `chk_inventory_stock_nonnegative` CHECK (`quantity_in_stock` >= 0),
