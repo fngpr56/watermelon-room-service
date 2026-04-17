@@ -12,7 +12,8 @@ export const swaggerSpec = {
     { name: "Staff", description: "Authenticated staff CRUD operations." },
     { name: "Rooms", description: "Authenticated room CRUD operations." },
     { name: "Inventory", description: "Stock and inventory management." },
-    { name: "Requests", description: "Room service requests." }
+    { name: "Requests", description: "Room service requests." },
+    { name: "Stocktaking", description: "Inventory stocktaking and audits." }
   ],
   components: {
     securitySchemes: {
@@ -218,7 +219,125 @@ export const swaggerSpec = {
       requestDate: "2026-04-17T12:30:00",
       completeDate: null
     }
+  },
+  StocktakingEntry: {
+  type: "object",
+  required: [
+    "id",
+    "inventoryItemId",
+    "expectedCount",
+    "physicalCount",
+    "discrepancy",
+    "createdAt"
+  ],
+  properties: {
+    id: {
+      type: "integer",
+      example: 1
+    },
+
+    inventoryItemId: {
+      type: "integer",
+      example: 5
+    },
+
+    expectedCount: {
+      type: "integer",
+      minimum: 0,
+      example: 100
+    },
+
+    physicalCount: {
+      type: "integer",
+      minimum: 0,
+      example: 95
+    },
+
+    discrepancy: {
+      type: "integer",
+      example: -5
+    },
+
+    reason: {
+      type: "string",
+      nullable: true,
+      enum: ["damaged", "theft", "miscounted", "supplier_error"],
+      example: "miscounted"
+    },
+
+    createdAt: {
+      type: "string",
+      format: "date-time",
+      example: "2026-04-17T12:00:00Z"
+    }
   }
+},
+
+StocktakingListResponse: {
+  type: "object",
+  required: ["items"],
+  properties: {
+    items: {
+      type: "array",
+      items: {
+        $ref: "#/components/schemas/StocktakingEntry"
+      }
+    }
+  }
+},
+
+StocktakingItemResponse: {
+  type: "object",
+  required: ["item"],
+  properties: {
+    item: {
+      $ref: "#/components/schemas/StocktakingEntry"
+    }
+  }
+},
+
+StocktakingCreateRequest: {
+  type: "object",
+  required: ["inventoryItemId", "expectedCount", "physicalCount"],
+  properties: {
+    inventoryItemId: {
+      type: "integer",
+      example: 5
+    },
+
+    expectedCount: {
+      type: "integer",
+      minimum: 0,
+      example: 100
+    },
+
+    physicalCount: {
+      type: "integer",
+      minimum: 0,
+      example: 95
+    },
+
+    reason: {
+      type: "string",
+      nullable: true,
+      enum: ["damaged", "theft", "miscounted", "supplier_error"],
+      example: "damaged"
+    }
+  }
+},
+
+StocktakingUpdateRequest: {
+  allOf: [
+    {
+      $ref: "#/components/schemas/StocktakingCreateRequest"
+    }
+  ],
+  required: [
+    "inventoryItemId",
+    "expectedCount",
+    "physicalCount"
+  ]
+}
     },
     
   },
@@ -831,6 +950,196 @@ export const swaggerSpec = {
       },
       404: {
         description: "Request was not found.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+},
+"/api/stocktaking": {
+  get: {
+    tags: ["Stocktaking"],
+    summary: "List stocktaking entries",
+    security: [{ sessionCookie: [] }],
+    responses: {
+      200: {
+        description: "Stocktaking entries returned successfully.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/StocktakingListResponse"
+            }
+          }
+        }
+      },
+      401: {
+        description: "Missing or invalid session cookie.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      403: {
+        description: "Authenticated user is not a staff user.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+
+  post: {
+    tags: ["Stocktaking"],
+    summary: "Create stocktaking entry",
+    security: [{ sessionCookie: [] }],
+    requestBody: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: {
+            $ref: "#/components/schemas/StocktakingCreateRequest"
+          }
+        }
+      }
+    },
+    responses: {
+      201: {
+        description: "Stocktaking entry created successfully.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/StocktakingItemResponse"
+            }
+          }
+        }
+      },
+      400: {
+        description: "Validation error.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      401: {
+        description: "Missing or invalid session cookie.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      403: {
+        description: "Authenticated user is not a staff user.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+},
+
+"/api/stocktaking/{id}": {
+  put: {
+    tags: ["Stocktaking"],
+    summary: "Update stocktaking entry",
+    security: [{ sessionCookie: [] }],
+    parameters: [
+      {
+        name: "id",
+        in: "path",
+        required: true,
+        schema: {
+          type: "integer",
+          minimum: 1
+        }
+      }
+    ],
+    requestBody: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: {
+            $ref: "#/components/schemas/StocktakingUpdateRequest"
+          }
+        }
+      }
+    },
+    responses: {
+      200: {
+        description: "Stocktaking entry updated successfully.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/StocktakingItemResponse"
+            }
+          }
+        }
+      },
+      400: {
+        description: "Invalid input.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      404: {
+        description: "Stocktaking entry not found.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+
+  delete: {
+    tags: ["Stocktaking"],
+    summary: "Delete stocktaking entry",
+    security: [{ sessionCookie: [] }],
+    parameters: [
+      {
+        name: "id",
+        in: "path",
+        required: true,
+        schema: {
+          type: "integer",
+          minimum: 1
+        }
+      }
+    ],
+    responses: {
+      204: {
+        description: "Stocktaking entry deleted successfully."
+      },
+      404: {
+        description: "Stocktaking entry not found.",
         content: {
           "application/json": {
             schema: {
