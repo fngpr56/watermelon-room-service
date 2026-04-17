@@ -12,7 +12,7 @@
         <div>
           <span class="eyebrow">Guest Tasks</span>
           <h2 id="page-title">Guest Tasks</h2>
-          <p class="muted">Create, edit, and delete your room requests from the requests table.</p>
+          <p class="muted">View your room requests in a single read-only table.</p>
         </div>
 
         <div class="meta" id="meta"></div>
@@ -23,56 +23,12 @@
           <button class="secondary" id="logout-button" type="button">Log out</button>
         </div>
 
-        <section class="management-layout">
-          <article class="tile manager-panel">
-            <div class="section-heading">
-              <strong id="request-form-title">Create request</strong>
-              <p class="muted">Every change here writes directly to your room's records in requests.</p>
-            </div>
-
-            <form id="request-form" class="manager-form">
-              <input id="request-id" name="requestId" type="hidden" />
-
-              <div class="form-grid">
-                <label class="label form-span-2" for="fullRequest">
-                  Request
-                  <textarea id="fullRequest" name="fullRequest" rows="4" maxlength="2000" required></textarea>
-                </label>
-
-                <label class="label" for="category">
-                  Category
-                  <input id="category" name="category" type="text" maxlength="50" placeholder="housekeeping" />
-                </label>
-
-                <label class="label" for="statusId">
-                  Status
-                  <select id="statusId" name="statusId" required></select>
-                </label>
-
-                <label class="label" for="etaMinutes">
-                  ETA minutes
-                  <input id="etaMinutes" name="etaMinutes" type="number" min="0" step="1" />
-                </label>
-
-                <label class="label form-span-2" for="notes">
-                  Notes
-                  <textarea id="notes" name="notes" rows="3" maxlength="2000"></textarea>
-                </label>
-              </div>
-
-              <div class="button-row">
-                <button class="primary" id="submit-request-button" type="submit">Create request</button>
-                <button class="secondary" id="reset-request-button" type="button">Clear form</button>
-              </div>
-              <p id="request-status" class="status" aria-live="polite"></p>
-            </form>
-          </article>
-
+        <section>
           <article class="tile manager-panel">
             <div class="section-heading section-heading-row">
               <div>
                 <strong>My requests</strong>
-                <p class="muted">Review request history, update open requests, or remove records you no longer need.</p>
+                <p class="muted">Review the current request history for your room.</p>
               </div>
               <span id="request-count" class="table-count">0 requests</span>
             </div>
@@ -86,7 +42,6 @@
                     <th>Status</th>
                     <th>ETA</th>
                     <th>Notes</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="request-table-body"></tbody>
