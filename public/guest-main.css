@@ -197,9 +197,20 @@ body {
   color: #9f2d20;
 }
 
+.home-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.action-pill {
+  min-width: 120px;
+}
+
 #logout-button,
-#tasks-button,
-#help-button {
+.action-pill {
   position: absolute;
   border: 0;
   border-radius: 999px;
@@ -223,14 +234,8 @@ body {
   pointer-events: auto;
 }
 
-#tasks-button {
-  bottom: 22px;
-  left: 22px;
-}
-
-#help-button {
-  bottom: 22px;
-  right: 22px;
+.action-pill {
+  position: static;
 }
 
 .help-icon {
@@ -290,8 +295,7 @@ body {
   }
 
   #logout-button,
-  #tasks-button,
-  #help-button {
+  .action-pill {
     position: static;
     left: auto;
     right: auto;
@@ -306,16 +310,6 @@ body {
 
   #logout-button {
     margin: 0 0 4px auto;
-  }
-
-  #tasks-button {
-    display: flex;
-    margin-top: 14px;
-  }
-
-  #help-button {
-    display: flex;
-    margin-top: 10px;
   }
 }
 
