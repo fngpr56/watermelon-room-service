@@ -1,24 +1,55 @@
 import { getPool } from "../config/db.js";
 import { ApiError } from "../utils/apiError.js";
 
-/**
- * FORMAT RESPONSE
- */
 function formatItem(row) {
   return {
     id: row.id,
     name: row.name,
     category: row.category,
     unit: row.unit,
-    quantityInStock: row.quantityInStock,
-    quantityReserved: row.quantityReserved,
-    lowStockThreshold: row.lowStockThreshold,
+    quantityInStock: Number(row.quantityInStock),
+    quantityReserved: Number(row.quantityReserved),
+    lowStockThreshold: Number(row.lowStockThreshold),
   };
 }
 
-/**
- * GET BY ID
- */
+function formatAssignment(row) {
+  return {
+    id: row.id,
+    quantity: Number(row.quantity),
+    notes: row.notes,
+    assignedAt: row.assignedAt,
+    room: {
+      id: row.roomId,
+      roomNumber: row.roomNumber,
+      owner: row.roomOwner,
+      displayName: row.roomOwner ? `Room ${row.roomNumber} - ${row.roomOwner}` : `Room ${row.roomNumber}`,
+    },
+    inventoryItem: {
+      id: row.inventoryItemId,
+      name: row.inventoryItemName,
+      category: row.inventoryItemCategory,
+      unit: row.inventoryItemUnit,
+    },
+    staff: {
+      id: row.staffId,
+      displayName: row.staffName,
+    },
+  };
+}
+
+function buildAssignmentReason(room, notes) {
+  const baseReason = room?.roomNumber ? `Assigned to room ${room.roomNumber}` : "Assigned to room";
+  const extra = notes ? `: ${notes}` : "";
+  return `${baseReason}${extra}`.slice(0, 100);
+}
+
+function assertStockLevels(quantityInStock, quantityReserved) {
+  if (Number(quantityReserved) > Number(quantityInStock)) {
+    throw new ApiError(400, "Reserved quantity cannot exceed stock quantity");
+  }
+}
+
 async function getItemById(conn, id) {
   const rows = await conn.query(
     `SELECT
@@ -38,9 +69,50 @@ async function getItemById(conn, id) {
   return rows[0] || null;
 }
 
-/**
- * LIST
- */
+async function getRoomById(conn, roomId) {
+  const rows = await conn.query(
+    `SELECT id,
+            room_number AS roomNumber,
+            owner AS roomOwner
+     FROM rooms
+     WHERE id = ?
+     LIMIT 1`,
+    [roomId]
+  );
+
+  return rows[0] || null;
+}
+
+async function getInventoryAssignmentById(conn, assignmentId) {
+  const rows = await conn.query(
+    `SELECT a.id,
+            a.inventory_item_id AS inventoryItemId,
+            i.name AS inventoryItemName,
+            i.category AS inventoryItemCategory,
+            i.unit AS inventoryItemUnit,
+            a.room_id AS roomId,
+            r.room_number AS roomNumber,
+            r.owner AS roomOwner,
+            a.staff_id AS staffId,
+            CASE
+              WHEN s.id IS NULL THEN 'Unknown staff'
+              ELSE CONCAT(s.first_name, ' ', s.last_name)
+            END AS staffName,
+            a.quantity,
+            a.notes,
+            DATE_FORMAT(a.assigned_at, '%Y-%m-%dT%H:%i:%s') AS assignedAt
+     FROM inventory_room_assignments a
+     JOIN inventory_items i ON i.id = a.inventory_item_id
+     JOIN rooms r ON r.id = a.room_id
+     LEFT JOIN staff s ON s.id = a.staff_id
+     WHERE a.id = ?
+     LIMIT 1`,
+    [assignmentId]
+  );
+
+  return rows[0] || null;
+}
+
 export async function listInventoryItems() {
   const pool = getPool();
   let conn;
@@ -69,15 +141,52 @@ export async function listInventoryItems() {
   }
 }
 
-/**
- * CREATE
- */
+export async function listInventoryAssignments() {
+  const pool = getPool();
+  let conn;
+
+  try {
+    conn = await pool.getConnection();
+
+    const rows = await conn.query(
+      `SELECT a.id,
+              a.inventory_item_id AS inventoryItemId,
+              i.name AS inventoryItemName,
+              i.category AS inventoryItemCategory,
+              i.unit AS inventoryItemUnit,
+              a.room_id AS roomId,
+              r.room_number AS roomNumber,
+              r.owner AS roomOwner,
+              a.staff_id AS staffId,
+              CASE
+                WHEN s.id IS NULL THEN 'Unknown staff'
+                ELSE CONCAT(s.first_name, ' ', s.last_name)
+              END AS staffName,
+              a.quantity,
+              a.notes,
+              DATE_FORMAT(a.assigned_at, '%Y-%m-%dT%H:%i:%s') AS assignedAt
+       FROM inventory_room_assignments a
+       JOIN inventory_items i ON i.id = a.inventory_item_id
+       JOIN rooms r ON r.id = a.room_id
+       LEFT JOIN staff s ON s.id = a.staff_id
+       ORDER BY a.assigned_at DESC, a.id DESC`
+    );
+
+    return rows.map(formatAssignment);
+  } finally {
+    if (conn) {
+      conn.release();
+    }
+  }
+}
+
 export async function createInventoryItem(data) {
   const pool = getPool();
   let conn;
 
   try {
     conn = await pool.getConnection();
+    assertStockLevels(data.quantityInStock ?? 0, data.quantityReserved ?? 0);
 
     const result = await conn.query(
       `INSERT INTO inventory_items (
@@ -108,9 +217,6 @@ export async function createInventoryItem(data) {
   }
 }
 
-/**
- * UPDATE
- */
 export async function updateInventoryItem(id, data) {
   const pool = getPool();
   let conn;
@@ -123,6 +229,10 @@ export async function updateInventoryItem(id, data) {
     if (!existing) {
       throw new ApiError(404, "Inventory item not found");
     }
+
+    const nextQuantityInStock = data.quantityInStock ?? existing.quantityInStock;
+    const nextQuantityReserved = data.quantityReserved ?? existing.quantityReserved;
+    assertStockLevels(nextQuantityInStock, nextQuantityReserved);
 
     await conn.query(
       `UPDATE inventory_items
@@ -137,8 +247,8 @@ export async function updateInventoryItem(id, data) {
         data.name ?? existing.name,
         data.category ?? existing.category,
         data.unit ?? existing.unit,
-        data.quantityInStock ?? existing.quantityInStock,
-        data.quantityReserved ?? existing.quantityReserved,
+        nextQuantityInStock,
+        nextQuantityReserved,
         data.lowStockThreshold ?? existing.lowStockThreshold,
         id,
       ]
@@ -154,9 +264,6 @@ export async function updateInventoryItem(id, data) {
   }
 }
 
-/**
- * DELETE
- */
 export async function deleteInventoryItem(id) {
   const pool = getPool();
   let conn;
@@ -178,6 +285,82 @@ export async function deleteInventoryItem(id) {
     if (!result.affectedRows) {
       throw new ApiError(404, "Inventory item not found");
     }
+  } finally {
+    if (conn) {
+      conn.release();
+    }
+  }
+}
+
+export async function assignInventoryToRoom(data, staffSession) {
+  const pool = getPool();
+  let conn;
+
+  try {
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const item = await getItemById(conn, data.inventoryItemId);
+
+    if (!item) {
+      throw new ApiError(404, "Inventory item not found");
+    }
+
+    if (Number(item.quantityInStock) < Number(data.quantity)) {
+      throw new ApiError(409, "Not enough inventory in stock");
+    }
+
+    const room = await getRoomById(conn, data.roomId);
+
+    if (!room) {
+      throw new ApiError(404, "Room not found");
+    }
+
+    const stockUpdate = await conn.query(
+      `UPDATE inventory_items
+       SET quantity_in_stock = quantity_in_stock - ?
+       WHERE id = ?
+         AND quantity_in_stock >= ?`,
+      [data.quantity, data.inventoryItemId, data.quantity]
+    );
+
+    if (!stockUpdate.affectedRows) {
+      throw new ApiError(409, "Not enough inventory in stock");
+    }
+
+    const assignmentResult = await conn.query(
+      `INSERT INTO inventory_room_assignments (
+        inventory_item_id,
+        room_id,
+        staff_id,
+        quantity,
+        notes
+      ) VALUES (?, ?, ?, ?, ?)`,
+      [data.inventoryItemId, data.roomId, staffSession.staffId, data.quantity, data.notes || null]
+    );
+
+    await conn.query(
+      `INSERT INTO inventory_transactions (
+        inventory_item_id,
+        request_id,
+        staff_id,
+        transaction_type,
+        quantity,
+        reason
+      ) VALUES (?, NULL, ?, 'room_assignment', ?, ?)`,
+      [data.inventoryItemId, staffSession.staffId, data.quantity, buildAssignmentReason(room, data.notes)]
+    );
+
+    await conn.commit();
+
+    const created = await getInventoryAssignmentById(conn, Number(assignmentResult.insertId));
+    return formatAssignment(created);
+  } catch (error) {
+    if (conn) {
+      await conn.rollback();
+    }
+
+    throw error;
   } finally {
     if (conn) {
       conn.release();

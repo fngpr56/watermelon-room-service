@@ -2,8 +2,10 @@ import { z } from "zod";
 import { ApiError } from "../utils/apiError.js";
 
 import {
+  assignInventoryToRoom,
   createInventoryItem,
   deleteInventoryItem,
+  listInventoryAssignments,
   listInventoryItems,
   updateInventoryItem,
 } from "../services/inventory.service.js";
@@ -24,9 +26,22 @@ const baseInventorySchema = z.object({
 /**
  * CREATE / UPDATE
  */
-const createInventorySchema = baseInventorySchema;
+const createInventorySchema = baseInventorySchema.refine(
+  (payload) => payload.quantityReserved <= payload.quantityInStock,
+  {
+    message: "Reserved quantity cannot exceed stock quantity",
+    path: ["quantityReserved"],
+  }
+);
 
 const updateInventorySchema = baseInventorySchema.partial();
+
+const inventoryAssignmentSchema = z.object({
+  inventoryItemId: z.number().int().positive(),
+  roomId: z.number().int().positive(),
+  quantity: z.number().int().positive(),
+  notes: z.string().trim().max(255).nullable().optional(),
+});
 
 /**
  * ID PARSER
@@ -67,12 +82,29 @@ function normalizePayload(body) {
   };
 }
 
+function normalizeAssignmentPayload(body) {
+  return {
+    inventoryItemId: Number(body?.inventoryItemId),
+    roomId: Number(body?.roomId),
+    quantity: Number(body?.quantity),
+    notes: body?.notes ? String(body.notes).trim() : null,
+  };
+}
+
 /**
  * DB ERROR MAPPER
  */
 function mapDbError(error) {
   if (error?.code === "ER_DUP_ENTRY") {
     return new ApiError(409, "Inventory item with this name already exists");
+  }
+
+  if (error?.code === "ER_NO_SUCH_TABLE" || error?.errno === 1146) {
+    return new ApiError(409, "Database schema is out of date. Run sql/migrate_inventory_assignments.sql.");
+  }
+
+  if (error?.code === "ER_ROW_IS_REFERENCED_2") {
+    return new ApiError(409, "Inventory item cannot be deleted while it is referenced by requests, assignments, or transactions");
   }
 
   return error;
@@ -84,6 +116,15 @@ function mapDbError(error) {
 export async function getInventory(req, res, next) {
   try {
     const items = await listInventoryItems();
+    res.json({ items });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getInventoryAssignments(req, res, next) {
+  try {
+    const items = await listInventoryAssignments();
     res.json({ items });
   } catch (error) {
     next(error);
@@ -142,5 +183,19 @@ export async function removeInventory(req, res, next) {
     res.status(204).send();
   } catch (error) {
     next(error);
+  }
+}
+
+export async function createInventoryAssignmentRecord(req, res, next) {
+  try {
+    const payload = inventoryAssignmentSchema.parse(normalizeAssignmentPayload(req.body));
+    const item = await assignInventoryToRoom(payload, req.session);
+    res.status(201).json({ item });
+  } catch (error) {
+    next(
+      error.name === "ZodError"
+        ? new ApiError(400, "Invalid inventory assignment payload")
+        : mapDbError(error)
+    );
   }
 }
