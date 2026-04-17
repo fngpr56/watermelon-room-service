@@ -81,11 +81,15 @@ npm start
 
 ## Startup behavior
 
-The server creates the `rooms` and `staff` tables if they do not exist and migrates older auth columns to the current snake_case schema.
-
-The server does **not** auto-insert sample room or staff records on startup.
+The server does **not** auto-create tables, auto-migrate schema, or auto-insert sample data on startup.
 
 Sample data is only inserted when you manually import [sql/schema.sql](sql/schema.sql).
+
+If you already have an older database and need the newer inventory assignment tables, run:
+
+```bash
+mysql -u root -p watermelon_room_service < sql/migrate_inventory_assignments.sql
+```
 
 ## Logging and errors
 

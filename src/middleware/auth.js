@@ -44,6 +44,27 @@ export function requireApiRole(role) {
   };
 }
 
+export function requireApiStaffRole(role) {
+  return function authorize(req, res, next) {
+    const session = getSession(req);
+
+    if (!session) {
+      return rejectApiRequest(res, 401, "Not authenticated");
+    }
+
+    if (session.userType !== "staff") {
+      return rejectApiRequest(res, 403, "Forbidden");
+    }
+
+    if (session.role !== role) {
+      return rejectApiRequest(res, 403, `Only staff with the ${role} role can access this resource`);
+    }
+
+    req.session = session;
+    next();
+  };
+}
+
 export function requireApiAuth() {
   return function authorize(req, res, next) {
     const session = getSession(req);
