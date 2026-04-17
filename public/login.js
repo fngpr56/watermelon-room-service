@@ -1,8 +1,12 @@
+import { clearSessionToken, setSessionToken, withSessionPath } from "/page-main.js";
+
 const form = document.querySelector("#login-form");
 const statusNode = document.querySelector("#status");
 const submitButton = document.querySelector("#submit-button");
 const passwordInput = document.querySelector("#password");
 const togglePasswordButton = document.querySelector("#toggle-password-button");
+
+clearSessionToken();
 
 function setStatus(message, tone = "") {
   statusNode.textContent = message;
@@ -48,8 +52,14 @@ form?.addEventListener("submit", async (event) => {
       return;
     }
 
+    if (!payload.sessionToken) {
+      setStatus("Login failed", "error");
+      return;
+    }
+
+    setSessionToken(payload.sessionToken);
     setStatus("Login successful. Redirecting...", "ok");
-    window.location.assign(payload.redirectTo || "/login");
+    window.location.assign(withSessionPath(payload.redirectTo || "/login", payload.sessionToken));
   } catch {
     setStatus("Unable to reach the server", "error");
   } finally {

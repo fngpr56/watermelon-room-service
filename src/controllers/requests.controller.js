@@ -1,7 +1,14 @@
 import { z } from "zod";
 
 import { ApiError } from "../utils/apiError.js";
-import { createRoomRequest, deleteRoomRequest, listRoomRequests, updateRoomRequest } from "../services/requests.service.js";
+import { emitInventoryUpdated } from "../sockets/index.js";
+import {
+  createRoomRequest,
+  deleteRoomRequest,
+  listRequestCatalog,
+  listRoomRequests,
+  updateRoomRequest,
+} from "../services/requests.service.js";
 
 const requestSchema = z.object({
   fullRequest: z.string().trim().min(1).max(2000),
@@ -10,6 +17,27 @@ const requestSchema = z.object({
   notes: z.string().trim().max(2000).nullable(),
   etaMinutes: z.number().int().min(0).nullable(),
 });
+
+const createRequestSchema = requestSchema.extend({
+  inventoryItemId: z.number().int().positive().nullable().optional(),
+  quantityRequested: z.number().int().positive().nullable().optional(),
+});
+
+function mapDbError(error) {
+  if (error?.code === "ER_NO_SUCH_TABLE" || error?.errno === 1146) {
+    return new ApiError(409, "Database schema is out of date. Run sql/migrate_inventory_assignments.sql.");
+  }
+
+  return error;
+}
+
+function normalizeOptionalNumber(value) {
+  if (value === null || value === undefined || String(value).trim() === "") {
+    return null;
+  }
+
+  return Number(value);
+}
 
 function normalizePayload(body) {
   const rawEta = body?.etaMinutes;
@@ -21,7 +49,18 @@ function normalizePayload(body) {
     notes: body?.notes ? String(body.notes).trim() : null,
     etaMinutes:
       rawEta === null || rawEta === undefined || String(rawEta).trim() === "" ? null : Number(rawEta),
+    inventoryItemId: normalizeOptionalNumber(body?.inventoryItemId),
+    quantityRequested: normalizeOptionalNumber(body?.quantityRequested),
   };
+}
+
+export async function getRequestCatalog(req, res, next) {
+  try {
+    const items = await listRequestCatalog();
+    res.json({ items });
+  } catch (error) {
+    next(error);
+  }
 }
 
 export async function getRequests(req, res, next) {
@@ -35,11 +74,22 @@ export async function getRequests(req, res, next) {
 
 export async function createRequestRecord(req, res, next) {
   try {
-    const payload = requestSchema.parse(normalizePayload(req.body));
+    const payload = createRequestSchema.parse(normalizePayload(req.body));
     const item = await createRoomRequest(req.session.roomId, payload);
+
+    if (item.inventoryMatch) {
+      emitInventoryUpdated({
+        inventoryItemId: item.inventoryMatch.id,
+        roomId: req.session.roomId,
+        requestId: item.id,
+        assignmentId: item.inventoryAssignment?.id || null,
+        changeType: "guest-request-created",
+      });
+    }
+
     res.status(201).json({ item });
   } catch (error) {
-    next(error.name === "ZodError" ? new ApiError(400, "Invalid request payload") : error);
+    next(error.name === "ZodError" ? new ApiError(400, "Invalid request payload") : mapDbError(error));
   }
 }
 

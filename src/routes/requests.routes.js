@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import {
   createRequestRecord,
+  getRequestCatalog,
   getRequests,
   removeRequestRecord,
   updateRequestRecord,
@@ -12,6 +13,7 @@ const router = Router();
 
 router.use(requireApiRole("guest"));
 
+router.get("/catalog", getRequestCatalog);
 router.get("/", getRequests);
 router.post("/", createRequestRecord);
 router.put("/:requestId", updateRequestRecord);

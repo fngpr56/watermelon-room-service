@@ -1,10 +1,15 @@
 import { z } from "zod";
 import { ApiError } from "../utils/apiError.js";
+import { emitInventoryUpdated } from "../sockets/index.js";
 
 import {
+  assignInventoryToRoom,
   createInventoryItem,
+  deleteInventoryAssignment,
   deleteInventoryItem,
+  listInventoryAssignments,
   listInventoryItems,
+  updateInventoryAssignment,
   updateInventoryItem,
 } from "../services/inventory.service.js";
 
@@ -24,9 +29,22 @@ const baseInventorySchema = z.object({
 /**
  * CREATE / UPDATE
  */
-const createInventorySchema = baseInventorySchema;
+const createInventorySchema = baseInventorySchema.refine(
+  (payload) => payload.quantityReserved <= payload.quantityInStock,
+  {
+    message: "Reserved quantity cannot exceed stock quantity",
+    path: ["quantityReserved"],
+  }
+);
 
 const updateInventorySchema = baseInventorySchema.partial();
+
+const inventoryAssignmentSchema = z.object({
+  inventoryItemId: z.number().int().positive(),
+  roomId: z.number().int().positive(),
+  quantity: z.number().int().positive(),
+  notes: z.string().trim().max(255).nullable().optional(),
+});
 
 /**
  * ID PARSER
@@ -36,6 +54,16 @@ function parseInventoryId(value) {
 
   if (!Number.isInteger(id) || id <= 0) {
     throw new ApiError(400, "Invalid inventory item id");
+  }
+
+  return id;
+}
+
+function parseAssignmentId(value) {
+  const id = Number(value);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new ApiError(400, "Invalid inventory assignment id");
   }
 
   return id;
@@ -67,12 +95,29 @@ function normalizePayload(body) {
   };
 }
 
+function normalizeAssignmentPayload(body) {
+  return {
+    inventoryItemId: Number(body?.inventoryItemId),
+    roomId: Number(body?.roomId),
+    quantity: Number(body?.quantity),
+    notes: body?.notes ? String(body.notes).trim() : null,
+  };
+}
+
 /**
  * DB ERROR MAPPER
  */
 function mapDbError(error) {
   if (error?.code === "ER_DUP_ENTRY") {
     return new ApiError(409, "Inventory item with this name already exists");
+  }
+
+  if (error?.code === "ER_NO_SUCH_TABLE" || error?.errno === 1146) {
+    return new ApiError(409, "Database schema is out of date. Run sql/migrate_inventory_assignments.sql.");
+  }
+
+  if (error?.code === "ER_ROW_IS_REFERENCED_2") {
+    return new ApiError(409, "Inventory item cannot be deleted while it is referenced by requests, assignments, or transactions");
   }
 
   return error;
@@ -90,6 +135,15 @@ export async function getInventory(req, res, next) {
   }
 }
 
+export async function getInventoryAssignments(req, res, next) {
+  try {
+    const items = await listInventoryAssignments();
+    res.json({ items });
+  } catch (error) {
+    next(error);
+  }
+}
+
 /**
  * CREATE
  */
@@ -98,6 +152,7 @@ export async function createInventoryRecord(req, res, next) {
     const payload = createInventorySchema.parse(normalizePayload(req.body));
 
     const item = await createInventoryItem(payload);
+    emitInventoryUpdated({ inventoryItemId: item.id, changeType: "item-created" });
 
     res.status(201).json({ item });
   } catch (error) {
@@ -119,6 +174,7 @@ export async function updateInventoryRecord(req, res, next) {
     const payload = updateInventorySchema.parse(normalizePayload(req.body));
 
     const item = await updateInventoryItem(id, payload);
+    emitInventoryUpdated({ inventoryItemId: item.id, changeType: "item-updated" });
 
     res.json({ item });
   } catch (error) {
@@ -138,9 +194,67 @@ export async function removeInventory(req, res, next) {
     const id = parseInventoryId(req.params.inventoryId);
 
     await deleteInventoryItem(id);
+    emitInventoryUpdated({ inventoryItemId: id, changeType: "item-deleted" });
 
     res.status(204).send();
   } catch (error) {
     next(error);
+  }
+}
+
+export async function createInventoryAssignmentRecord(req, res, next) {
+  try {
+    const payload = inventoryAssignmentSchema.parse(normalizeAssignmentPayload(req.body));
+    const item = await assignInventoryToRoom(payload, req.session);
+    emitInventoryUpdated({
+      inventoryItemId: item.inventoryItem.id,
+      roomId: item.room.id,
+      assignmentId: item.id,
+      changeType: "assignment-created",
+    });
+    res.status(201).json({ item });
+  } catch (error) {
+    next(
+      error.name === "ZodError"
+        ? new ApiError(400, "Invalid inventory assignment payload")
+        : mapDbError(error)
+    );
+  }
+}
+
+export async function updateInventoryAssignmentRecord(req, res, next) {
+  try {
+    const assignmentId = parseAssignmentId(req.params.assignmentId);
+    const payload = inventoryAssignmentSchema.parse(normalizeAssignmentPayload(req.body));
+    const item = await updateInventoryAssignment(assignmentId, payload, req.session);
+    emitInventoryUpdated({
+      inventoryItemId: item.inventoryItem.id,
+      roomId: item.room.id,
+      assignmentId: item.id,
+      changeType: "assignment-updated",
+    });
+    res.json({ item });
+  } catch (error) {
+    next(
+      error.name === "ZodError"
+        ? new ApiError(400, "Invalid inventory assignment payload")
+        : mapDbError(error)
+    );
+  }
+}
+
+export async function removeInventoryAssignmentRecord(req, res, next) {
+  try {
+    const assignmentId = parseAssignmentId(req.params.assignmentId);
+    const item = await deleteInventoryAssignment(assignmentId, req.session);
+    emitInventoryUpdated({
+      inventoryItemId: item.inventoryItem.id,
+      roomId: item.room.id,
+      assignmentId: item.id,
+      changeType: "assignment-deleted",
+    });
+    res.status(204).send();
+  } catch (error) {
+    next(mapDbError(error));
   }
 }

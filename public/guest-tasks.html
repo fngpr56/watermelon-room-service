@@ -4,98 +4,52 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Guest Tasks</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/guest-tasks.css" />
   </head>
   <body>
-    <main class="shell">
-      <section class="card page-panel page-layout">
-        <div>
-          <span class="eyebrow">Guest Tasks</span>
-          <h2 id="page-title">Guest Tasks</h2>
-          <p class="muted">Create, edit, and delete your room requests from the requests table.</p>
-        </div>
+    <main class="tasks-screen">
+      <section class="tasks-shell">
+        <header class="tasks-header">
+          <div class="tasks-heading">
+            <p class="tasks-eyebrow">Guest Tasks</p>
+            <h1 id="page-title">Room 172</h1>
+            <p class="tasks-copy">View your room requests in a single read-only table.</p>
+          </div>
 
-        <div class="meta" id="meta"></div>
+          <div class="tasks-header-actions">
+            <button id="back-home-button" class="pill-button" type="button">Home</button>
+            <button id="open-help-button" class="pill-button" type="button">Help</button>
+            <button id="logout-button" class="pill-button" type="button">Log out</button>
+          </div>
+        </header>
+        <div id="meta" class="sr-only" aria-hidden="true"></div>
 
-        <div class="button-row page-nav">
-          <button class="secondary" id="back-home-button" type="button">Back home</button>
-          <button class="secondary" id="open-help-button" type="button">Help</button>
-          <button class="secondary" id="logout-button" type="button">Log out</button>
-        </div>
-
-        <section class="management-layout">
-          <article class="tile manager-panel">
-            <div class="section-heading">
-              <strong id="request-form-title">Create request</strong>
-              <p class="muted">Every change here writes directly to your room's records in requests.</p>
+        <section class="tasks-panel">
+          <div class="tasks-panel-header">
+            <div>
+              <h2>My requests</h2>
+              <p>Review the current request history for your room.</p>
             </div>
+            <span id="request-count" class="count-pill">0 requests</span>
+          </div>
 
-            <form id="request-form" class="manager-form">
-              <input id="request-id" name="requestId" type="hidden" />
-
-              <div class="form-grid">
-                <label class="label form-span-2" for="fullRequest">
-                  Request
-                  <textarea id="fullRequest" name="fullRequest" rows="4" maxlength="2000" required></textarea>
-                </label>
-
-                <label class="label" for="category">
-                  Category
-                  <input id="category" name="category" type="text" maxlength="50" placeholder="housekeeping" />
-                </label>
-
-                <label class="label" for="statusId">
-                  Status
-                  <select id="statusId" name="statusId" required></select>
-                </label>
-
-                <label class="label" for="etaMinutes">
-                  ETA minutes
-                  <input id="etaMinutes" name="etaMinutes" type="number" min="0" step="1" />
-                </label>
-
-                <label class="label form-span-2" for="notes">
-                  Notes
-                  <textarea id="notes" name="notes" rows="3" maxlength="2000"></textarea>
-                </label>
-              </div>
-
-              <div class="button-row">
-                <button class="primary" id="submit-request-button" type="submit">Create request</button>
-                <button class="secondary" id="reset-request-button" type="button">Clear form</button>
-              </div>
-              <p id="request-status" class="status" aria-live="polite"></p>
-            </form>
-          </article>
-
-          <article class="tile manager-panel">
-            <div class="section-heading section-heading-row">
-              <div>
-                <strong>My requests</strong>
-                <p class="muted">Review request history, update open requests, or remove records you no longer need.</p>
-              </div>
-              <span id="request-count" class="table-count">0 requests</span>
-            </div>
-
-            <div class="table-wrap">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Requested</th>
-                    <th>Category</th>
-                    <th>Status</th>
-                    <th>ETA</th>
-                    <th>Notes</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="request-table-body"></tbody>
-              </table>
-            </div>
-          </article>
+          <div class="tasks-table-wrap">
+            <table class="tasks-table">
+              <thead>
+                <tr>
+                  <th>Requested</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>ETA</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody id="request-table-body"></tbody>
+            </table>
+          </div>
         </section>
 
-        <p id="status" class="status" aria-live="polite"></p>
+        <p id="status" class="sr-only" aria-live="polite"></p>
       </section>
     </main>
 

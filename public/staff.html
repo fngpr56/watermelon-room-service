@@ -45,7 +45,12 @@
 
                 <label class="label" for="password">
                   Password
-                  <input id="password" name="password" type="password" minlength="6" autocomplete="new-password" />
+                  <div class="password-field-row">
+                    <input id="password" name="password" type="password" minlength="6" autocomplete="new-password" />
+                    <button class="secondary password-toggle" type="button" id="staff-toggle-password-button" aria-label="Show password">
+                      Show
+                    </button>
+                  </div>
                 </label>
 
                 <label class="label" for="role">
@@ -136,7 +141,12 @@
 
                 <label class="label" for="roomPassword">
                   Password
-                  <input id="roomPassword" name="password" type="password" minlength="6" autocomplete="new-password" />
+                  <div class="password-field-row">
+                    <input id="roomPassword" name="password" type="password" minlength="6" autocomplete="new-password" />
+                    <button class="secondary password-toggle" type="button" id="room-toggle-password-button" aria-label="Show room password">
+                      Show
+                    </button>
+                  </div>
                 </label>
 
                 <label class="label form-span-2" for="owner">
@@ -186,6 +196,152 @@
                   </tr>
                 </thead>
                 <tbody id="room-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="management-layout" id="inventory-management-section" hidden>
+          <article class="tile manager-panel">
+            <div class="section-heading">
+              <strong id="inventory-form-title">Add inventory item</strong>
+              <p class="muted">Only housekeeping staff can manage inventory. Create, update, or remove inventory items here.</p>
+            </div>
+
+            <form id="inventory-form" class="manager-form">
+              <input id="inventory-id" name="inventoryId" type="hidden" />
+
+              <div class="form-grid">
+                <label class="label" for="inventory-name">
+                  Name
+                  <input id="inventory-name" name="name" type="text" maxlength="100" required />
+                </label>
+
+                <label class="label" for="inventory-category">
+                  Category
+                  <input id="inventory-category" name="category" type="text" maxlength="50" required />
+                </label>
+
+                <label class="label" for="inventory-unit">
+                  Unit
+                  <input id="inventory-unit" name="unit" type="text" maxlength="30" required />
+                </label>
+
+                <label class="label" for="inventory-quantity-in-stock">
+                  In stock
+                  <input id="inventory-quantity-in-stock" name="quantityInStock" type="number" min="0" step="1" value="0" required />
+                </label>
+
+                <label class="label" for="inventory-quantity-reserved">
+                  Reserved
+                  <input id="inventory-quantity-reserved" name="quantityReserved" type="number" min="0" step="1" value="0" required />
+                </label>
+
+                <label class="label" for="inventory-low-stock-threshold">
+                  Low stock threshold
+                  <input id="inventory-low-stock-threshold" name="lowStockThreshold" type="number" min="0" step="1" value="0" required />
+                </label>
+              </div>
+
+              <div class="button-row">
+                <button class="primary" id="submit-inventory-button" type="submit">Add inventory item</button>
+                <button class="secondary" id="reset-inventory-button" type="button">Clear form</button>
+              </div>
+              <p id="inventory-status" class="status" aria-live="polite"></p>
+            </form>
+          </article>
+
+          <article class="tile manager-panel">
+            <div class="section-heading section-heading-row">
+              <div>
+                <strong>Inventory</strong>
+                <p class="muted">Housekeeping staff can track stock levels and maintain the hotel inventory catalog.</p>
+              </div>
+              <span id="inventory-count" class="table-count">0 items</span>
+            </div>
+
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Unit</th>
+                    <th>In stock</th>
+                    <th>Reserved</th>
+                    <th>Low stock</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="inventory-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="management-layout" id="inventory-assignment-section" hidden>
+          <article class="tile manager-panel">
+            <div class="section-heading">
+              <strong id="assignment-form-title">Assign inventory to room</strong>
+              <p class="muted">Giving inventory to a room immediately decreases the item stock count.</p>
+            </div>
+
+            <form id="inventory-assignment-form" class="manager-form">
+              <input id="assignment-id" name="assignmentId" type="hidden" />
+
+              <div class="form-grid">
+                <label class="label" for="assignment-room-id">
+                  Room
+                  <select id="assignment-room-id" name="roomId" required></select>
+                </label>
+
+                <label class="label" for="assignment-inventory-item-id">
+                  Inventory item
+                  <select id="assignment-inventory-item-id" name="inventoryItemId" required></select>
+                </label>
+
+                <label class="label" for="assignment-quantity">
+                  Quantity
+                  <input id="assignment-quantity" name="quantity" type="number" min="1" step="1" value="1" required />
+                </label>
+
+                <label class="label form-span-2" for="assignment-notes">
+                  Notes
+                  <textarea id="assignment-notes" name="notes" rows="3" maxlength="255" placeholder="Optional delivery note"></textarea>
+                </label>
+              </div>
+
+              <div class="button-row">
+                <button class="primary" id="submit-assignment-button" type="submit">Give inventory</button>
+                <button class="secondary" id="reset-assignment-button" type="button">Clear form</button>
+              </div>
+              <p id="assignment-status" class="status" aria-live="polite"></p>
+            </form>
+          </article>
+
+          <article class="tile manager-panel">
+            <div class="section-heading section-heading-row">
+              <div>
+                <strong>Recent inventory assignments</strong>
+                <p class="muted">Review recent room deliveries completed by housekeeping staff.</p>
+              </div>
+              <span id="assignment-count" class="table-count">0 assignments</span>
+            </div>
+
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Assigned</th>
+                    <th>Room</th>
+                    <th>Item</th>
+                    <th>Quantity</th>
+                    <th>Staff</th>
+                    <th>Notes</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="assignment-table-body"></tbody>
               </table>
             </div>
           </article>

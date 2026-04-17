@@ -81,11 +81,15 @@ npm start
 
 ## Startup behavior
 
-The server creates the `rooms` and `staff` tables if they do not exist and migrates older auth columns to the current snake_case schema.
-
-The server does **not** auto-insert sample room or staff records on startup.
+The server does **not** auto-create tables, auto-migrate schema, or auto-insert sample data on startup.
 
 Sample data is only inserted when you manually import [sql/schema.sql](sql/schema.sql).
+
+If you already have an older database and need the newer inventory assignment tables, run:
+
+```bash
+mysql -u root -p watermelon_room_service < sql/migrate_inventory_assignments.sql
+```
 
 ## Logging and errors
 
@@ -111,3 +115,6 @@ Swagger UI is available at `http://localhost:3000/api-docs`.
 The raw OpenAPI document is available at `http://localhost:3000/api-docs.json`.
 
 The documented protected endpoints use the signed `wrs_session` cookie from `/api/auth/login`.
+
+## Database diagram
+<img width="1442" height="951" alt="hotel_schema_drawio_clean" src="https://github.com/user-attachments/assets/47e6baba-759e-4faa-a023-2bdb14b16242" />
