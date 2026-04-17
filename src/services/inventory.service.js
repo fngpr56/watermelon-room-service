@@ -20,6 +20,7 @@ function formatAssignment(row) {
   return {
     id: row.id,
     quantity: Number(row.quantity),
+    status: row.status,
     notes: row.notes,
     assignedAt: row.assignedAt,
     room: {
@@ -117,6 +118,7 @@ async function getInventoryAssignmentById(conn, assignmentId) {
               ELSE CONCAT(s.first_name, ' ', s.last_name)
             END AS staffName,
             a.quantity,
+            a.status AS status,
             a.notes,
             DATE_FORMAT(a.assigned_at, '%Y-%m-%dT%H:%i:%s') AS assignedAt
      FROM inventory_room_assignments a
@@ -230,6 +232,7 @@ export async function listInventoryAssignments() {
                 ELSE CONCAT(s.first_name, ' ', s.last_name)
               END AS staffName,
               a.quantity,
+              a.status AS status,
               a.notes,
               DATE_FORMAT(a.assigned_at, '%Y-%m-%dT%H:%i:%s') AS assignedAt
        FROM inventory_room_assignments a
@@ -401,9 +404,17 @@ export async function assignInventoryToRoom(data, staffSession) {
         room_id,
         staff_id,
         quantity,
+        status,
         notes
-      ) VALUES (?, ?, ?, ?, ?)`,
-      [data.inventoryItemId, data.roomId, staffSession.staffId, data.quantity, data.notes || null]
+      ) VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        data.inventoryItemId,
+        data.roomId,
+        staffSession.staffId,
+        data.quantity,
+        data.status,
+        data.notes || null,
+      ]
     );
 
     await conn.query(
@@ -511,10 +522,19 @@ export async function updateInventoryAssignment(assignmentId, data, staffSession
            room_id = ?,
            staff_id = ?,
            quantity = ?,
+           status = ?,
            notes = ?,
            assigned_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
-      [data.inventoryItemId, data.roomId, staffSession.staffId, data.quantity, data.notes || null, assignmentId]
+      [
+        data.inventoryItemId,
+        data.roomId,
+        staffSession.staffId,
+        data.quantity,
+        data.status,
+        data.notes || null,
+        assignmentId,
+      ]
     );
 
     await conn.commit();

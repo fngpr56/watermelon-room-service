@@ -337,9 +337,10 @@ async function createInventoryAssignmentForRequest(conn, roomId, item, quantity,
       room_id,
       staff_id,
       quantity,
+      status,
       notes
-    ) VALUES (?, ?, ?, ?, ?)`,
-    [item.id, roomId, assignedStaffId, quantity, buildAssignmentNote(fullRequest)]
+    ) VALUES (?, ?, ?, ?, ?, ?)`,
+    [item.id, roomId, assignedStaffId, quantity, 'started', buildAssignmentNote(fullRequest)]
   );
 
   return {
@@ -348,6 +349,7 @@ async function createInventoryAssignmentForRequest(conn, roomId, item, quantity,
     roomId,
     staffId: assignedStaffId,
     quantity,
+    status: 'started',
   };
 }
 

@@ -305,6 +305,15 @@
                   <input id="assignment-quantity" name="quantity" type="number" min="1" step="1" value="1" required />
                 </label>
 
+                <label class="label" for="assignment-workflow-status">
+                  Status
+                  <select id="assignment-workflow-status" name="status" required>
+                    <option value="started">Started</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </label>
+
                 <label class="label form-span-2" for="assignment-notes">
                   Notes
                   <textarea id="assignment-notes" name="notes" rows="3" maxlength="255" placeholder="Optional delivery note"></textarea>
@@ -336,6 +345,7 @@
                     <th>Room</th>
                     <th>Item</th>
                     <th>Quantity</th>
+                    <th>Status</th>
                     <th>Staff</th>
                     <th>Notes</th>
                     <th>Actions</th>

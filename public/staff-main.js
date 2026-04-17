@@ -59,6 +59,7 @@ const inventoryAssignmentIdField = document.querySelector("#assignment-id");
 const inventoryAssignmentItemField = document.querySelector("#assignment-inventory-item-id");
 const inventoryAssignmentRoomField = document.querySelector("#assignment-room-id");
 const inventoryAssignmentQuantityField = document.querySelector("#assignment-quantity");
+const inventoryAssignmentWorkflowStatusField = document.querySelector("#assignment-workflow-status");
 const inventoryAssignmentSubmitButton = document.querySelector("#submit-assignment-button");
 const inventoryAssignmentResetButton = document.querySelector("#reset-assignment-button");
 const inventoryAssignmentStatusNode = document.querySelector("#assignment-status");
@@ -86,6 +87,12 @@ let currentConversation = null;
 let conversationPollHandle = null;
 let conversationSocket = null;
 let inventoryRefreshHandle = null;
+
+const INVENTORY_ASSIGNMENT_STATUS_LABELS = {
+  started: "Started",
+  in_progress: "In Progress",
+  completed: "Completed",
+};
 
 if (inventoryManagementSection) {
   inventoryManagementSection.hidden = !isHousekeeping;
@@ -119,6 +126,10 @@ function formatCompactDateTime(value) {
 
 function formatRoomDisplayName(room) {
   return room.owner ? `Room ${room.roomNumber} - ${room.owner}` : `Room ${room.roomNumber}`;
+}
+
+function formatInventoryAssignmentStatus(status) {
+  return INVENTORY_ASSIGNMENT_STATUS_LABELS[status] || "Started";
 }
 
 function resetStaffPasswordVisibility() {
@@ -180,6 +191,7 @@ function resetInventoryAssignmentForm() {
   inventoryAssignmentFormTitle.textContent = "Assign inventory to room";
   inventoryAssignmentSubmitButton.textContent = "Give inventory";
   inventoryAssignmentQuantityField.value = "1";
+  inventoryAssignmentWorkflowStatusField.value = "started";
   renderInventoryItemOptions();
   renderRoomOptions();
   setStatus(inventoryAssignmentStatusNode, "");
@@ -235,6 +247,7 @@ function populateInventoryAssignmentForm(assignment) {
   renderRoomOptions(String(assignment.room.id));
   renderInventoryItemOptions(String(assignment.inventoryItem.id));
   inventoryAssignmentQuantityField.value = String(assignment.quantity);
+  inventoryAssignmentWorkflowStatusField.value = assignment.status || "started";
   inventoryAssignmentForm.notes.value = assignment.notes || "";
   inventoryAssignmentFormTitle.textContent = `Edit assignment for room ${assignment.room.roomNumber}`;
   inventoryAssignmentSubmitButton.textContent = "Update assignment";
@@ -463,7 +476,7 @@ function renderInventoryAssignmentTable() {
   if (inventoryAssignments.length === 0) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
-    cell.colSpan = 7;
+    cell.colSpan = 8;
     cell.className = "empty-state";
     cell.textContent = "No inventory assignments yet.";
     row.append(cell);
@@ -492,6 +505,13 @@ function renderInventoryAssignmentTable() {
     const quantityCell = document.createElement("td");
     quantityCell.textContent = `${assignment.quantity} ${assignment.inventoryItem.unit}`;
     row.append(quantityCell);
+
+    const statusCell = document.createElement("td");
+    const statusBadge = document.createElement("span");
+    statusBadge.className = `assignment-status-badge assignment-status-${assignment.status || "started"}`;
+    statusBadge.textContent = formatInventoryAssignmentStatus(assignment.status);
+    statusCell.append(statusBadge);
+    row.append(statusCell);
 
     const staffCell = document.createElement("td");
     staffCell.textContent = assignment.staff.displayName;
@@ -739,6 +759,7 @@ function getInventoryAssignmentPayload() {
     roomId: Number(formData.get("roomId") || 0),
     inventoryItemId: Number(formData.get("inventoryItemId") || 0),
     quantity: Number(formData.get("quantity") || 0),
+    status: String(formData.get("status") || "started").trim(),
     notes: String(formData.get("notes") || "").trim() || null,
   };
 }

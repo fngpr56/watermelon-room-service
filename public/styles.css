@@ -363,6 +363,33 @@ textarea {
   font-size: 0.9rem;
 }
 
+.assignment-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 102px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.assignment-status-started {
+  background: rgba(191, 161, 100, 0.2);
+  color: #7a5d22;
+}
+
+.assignment-status-in_progress {
+  background: rgba(37, 99, 235, 0.14);
+  color: #1d4ed8;
+}
+
+.assignment-status-completed {
+  background: rgba(22, 163, 74, 0.14);
+  color: #15803d;
+}
+
 .danger {
   color: #fff8f5;
   background: linear-gradient(135deg, #ae5447, #8c3d31);

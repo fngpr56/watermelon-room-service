@@ -27,7 +27,7 @@ const createRequestSchema = requestSchema.extend({
 });
 
 function mapDbError(error) {
-  if (error?.code === "ER_NO_SUCH_TABLE" || error?.errno === 1146) {
+  if (error?.code === "ER_NO_SUCH_TABLE" || error?.errno === 1146 || error?.code === "ER_BAD_FIELD_ERROR" || error?.errno === 1054) {
     return new ApiError(409, "Database schema is out of date. Run sql/migrate_inventory_assignments.sql.");
   }
 

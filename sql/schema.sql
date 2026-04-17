@@ -122,6 +122,7 @@ CREATE TABLE `inventory_room_assignments` (
   `room_id` INT NOT NULL,
   `staff_id` INT DEFAULT NULL,
   `quantity` INT NOT NULL,
+  `status` ENUM('started','in_progress','completed') NOT NULL DEFAULT 'started',
   `notes` VARCHAR(255) DEFAULT NULL,
   `assigned_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

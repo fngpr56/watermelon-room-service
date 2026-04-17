@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS `inventory_room_assignments` (
   `room_id` INT NOT NULL,
   `staff_id` INT DEFAULT NULL,
   `quantity` INT NOT NULL,
+  `status` ENUM('started','in_progress','completed') NOT NULL DEFAULT 'started',
   `notes` VARCHAR(255) DEFAULT NULL,
   `assigned_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -37,5 +38,33 @@ CREATE TABLE IF NOT EXISTS `inventory_room_assignments` (
   CONSTRAINT `fk_inventory_room_assignments_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `chk_inventory_room_assignments_quantity_positive` CHECK (`quantity` > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+SET @inventory_assignment_status_exists = (
+  SELECT COUNT(*)
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'inventory_room_assignments'
+    AND COLUMN_NAME = 'status'
+);
+
+SET @inventory_assignment_status_alter_sql = IF(
+  @inventory_assignment_status_exists = 0,
+  "ALTER TABLE `inventory_room_assignments` ADD COLUMN `status` ENUM('started','in_progress','completed') NOT NULL DEFAULT 'started' AFTER `quantity`",
+  'SELECT 1'
+);
+
+PREPARE inventory_assignment_status_alter_stmt FROM @inventory_assignment_status_alter_sql;
+EXECUTE inventory_assignment_status_alter_stmt;
+DEALLOCATE PREPARE inventory_assignment_status_alter_stmt;
+
+SET @inventory_assignment_status_backfill_sql = IF(
+  @inventory_assignment_status_exists = 0,
+  "UPDATE `inventory_room_assignments` SET `status` = 'completed'",
+  'SELECT 1'
+);
+
+PREPARE inventory_assignment_status_backfill_stmt FROM @inventory_assignment_status_backfill_sql;
+EXECUTE inventory_assignment_status_backfill_stmt;
+DEALLOCATE PREPARE inventory_assignment_status_backfill_stmt;
 
 COMMIT;

@@ -46,6 +46,7 @@ const inventoryAssignmentSchema = z.object({
   inventoryItemId: z.number().int().positive(),
   roomId: z.number().int().positive(),
   quantity: z.number().int().positive(),
+  status: z.enum(["started", "in_progress", "completed"]),
   notes: z.string().trim().max(255).nullable().optional(),
 });
 
@@ -103,6 +104,7 @@ function normalizeAssignmentPayload(body) {
     inventoryItemId: Number(body?.inventoryItemId),
     roomId: Number(body?.roomId),
     quantity: Number(body?.quantity),
+    status: body?.status ? String(body.status).trim() : "started",
     notes: body?.notes ? String(body.notes).trim() : null,
   };
 }
@@ -115,7 +117,7 @@ function mapDbError(error) {
     return new ApiError(409, "Inventory item with this name already exists");
   }
 
-  if (error?.code === "ER_NO_SUCH_TABLE" || error?.errno === 1146) {
+  if (error?.code === "ER_NO_SUCH_TABLE" || error?.errno === 1146 || error?.code === "ER_BAD_FIELD_ERROR" || error?.errno === 1054) {
     return new ApiError(409, "Database schema is out of date. Run sql/migrate_inventory_assignments.sql.");
   }
 
