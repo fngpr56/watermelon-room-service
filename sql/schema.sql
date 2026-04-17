@@ -81,22 +81,6 @@ CREATE TABLE `requests` (
   CONSTRAINT `chk_requests_eta_nonnegative` CHECK (`eta_minutes` IS NULL OR `eta_minutes` >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE `request_items` (
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `request_id` CHAR(36) NOT NULL,
-  `inventory_item_id` INT NOT NULL,
-  `quantity_requested` INT NOT NULL,
-  `quantity_fulfilled` INT NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`),
-  KEY `idx_request_items_request_id` (`request_id`),
-  KEY `idx_request_items_inventory_item_id` (`inventory_item_id`),
-  CONSTRAINT `fk_request_items_request` FOREIGN KEY (`request_id`) REFERENCES `requests` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_request_items_inventory_item` FOREIGN KEY (`inventory_item_id`) REFERENCES `inventory_items` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `chk_request_items_requested_positive` CHECK (`quantity_requested` > 0),
-  CONSTRAINT `chk_request_items_fulfilled_nonnegative` CHECK (`quantity_fulfilled` >= 0),
-  CONSTRAINT `chk_request_items_fulfilled_lte_requested` CHECK (`quantity_fulfilled` <= `quantity_requested`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 CREATE TABLE `inventory_transactions` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `inventory_item_id` INT NOT NULL,
@@ -116,33 +100,30 @@ CREATE TABLE `inventory_transactions` (
   CONSTRAINT `fk_inventory_transactions_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE `stocktaking_sessions` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `created_by_staff_id` INT NOT NULL,
-  `started_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `closed_at` DATETIME DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_stocktaking_sessions_created_by` (`created_by_staff_id`),
-  CONSTRAINT `fk_stocktaking_sessions_staff` FOREIGN KEY (`created_by_staff_id`) REFERENCES `staff` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+CREATE TABLE stocktaking_entries (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  inventory_item_id INT NOT NULL,
+  expected_count INT NOT NULL,
+  physical_count INT NOT NULL,
+  discrepancy INT NOT NULL,
+  reason ENUM('damaged','theft','miscounted','supplier_error') DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-CREATE TABLE `stocktaking_entries` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `session_id` BIGINT NOT NULL,
-  `inventory_item_id` INT NOT NULL,
-  `expected_count` INT NOT NULL,
-  `physical_count` INT NOT NULL,
-  `discrepancy` INT NOT NULL,
-  `reason` ENUM('damaged','theft','miscounted','supplier_error') DEFAULT NULL,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_stocktaking_entries_session_id` (`session_id`),
-  KEY `idx_stocktaking_entries_item_id` (`inventory_item_id`),
-  UNIQUE KEY `uq_stocktaking_session_item` (`session_id`,`inventory_item_id`),
-  CONSTRAINT `fk_stocktaking_entries_session` FOREIGN KEY (`session_id`) REFERENCES `stocktaking_sessions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_stocktaking_entries_item` FOREIGN KEY (`inventory_item_id`) REFERENCES `inventory_items` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `chk_stocktaking_expected_nonnegative` CHECK (`expected_count` >= 0),
-  CONSTRAINT `chk_stocktaking_physical_nonnegative` CHECK (`physical_count` >= 0)
+  PRIMARY KEY (id),
+
+  KEY idx_stocktaking_entries_item_id (inventory_item_id),
+
+  CONSTRAINT fk_stocktaking_entries_item
+    FOREIGN KEY (inventory_item_id)
+    REFERENCES inventory_items (id)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE,
+
+  CONSTRAINT chk_stocktaking_expected_nonnegative
+    CHECK (expected_count >= 0),
+
+  CONSTRAINT chk_stocktaking_physical_nonnegative
+    CHECK (physical_count >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 INSERT INTO `request_statuses` (`id`, `code`, `label`, `color`) VALUES
@@ -199,12 +180,9 @@ INSERT INTO `inventory_transactions` (`id`, `inventory_item_id`, `request_id`, `
 (7, 6, '44444444-4444-4444-4444-444444444444', 2, 'fulfillment', 1, 'Pillow delivered', '2026-04-16 16:48:00'),
 (8, 4, NULL, 3, 'restock', 10, 'Supplier delivery', '2026-04-15 09:00:00');
 
-INSERT INTO `stocktaking_sessions` (`id`, `created_by_staff_id`, `started_at`, `closed_at`) VALUES
-(1, 3, '2026-04-01 09:00:00', '2026-04-01 10:30:00');
-
-INSERT INTO `stocktaking_entries` (`id`, `session_id`, `inventory_item_id`, `expected_count`, `physical_count`, `discrepancy`, `reason`, `created_at`) VALUES
-(1, 1, 2, 32, 30, -2, 'miscounted', '2026-04-01 09:40:00'),
-(2, 1, 3, 9, 8, -1, 'damaged', '2026-04-01 09:50:00'),
-(3, 1, 1, 42, 42, 0, NULL, '2026-04-01 09:35:00');
+INSERT INTO `stocktaking_entries` (`id`, `inventory_item_id`, `expected_count`, `physical_count`, `discrepancy`, `reason`, `created_at`) VALUES
+(1, 2, 32, 30, -2, 'miscounted', '2026-04-01 09:40:00'),
+(2, 3, 9, 8, -1, 'damaged', '2026-04-01 09:50:00'),
+(3, 1, 42, 42, 0, NULL, '2026-04-01 09:35:00');
 
 COMMIT;
