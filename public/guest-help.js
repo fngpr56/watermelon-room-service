@@ -1,4 +1,4 @@
-import { initializeDashboard } from "/page-main.js";
+import { connectSessionSocket, fetchWithSession, initializeDashboard, navigateTo } from "/page-main.js";
 
 await initializeDashboard({
   expectedUserType: "guest",
@@ -24,6 +24,7 @@ const refreshButton = document.querySelector("#guest-conversation-refresh-button
 const statusNode = document.querySelector("#guest-conversation-status");
 
 let pollHandle = null;
+let conversationSocket = null;
 
 function setStatus(message, tone = "") {
   statusNode.textContent = message;
@@ -86,8 +87,7 @@ function renderConversation(payload) {
 }
 
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
-    credentials: "same-origin",
+  const response = await fetchWithSession(url, {
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
@@ -110,6 +110,17 @@ async function loadConversation(silent = false) {
 
   if (!silent) {
     setStatus(payload.conversation ? "Conversation loaded." : "Send a message to start the conversation.", payload.conversation ? "ok" : "");
+  }
+}
+
+async function startRealtimeConversation() {
+  try {
+    conversationSocket = await connectSessionSocket();
+    conversationSocket.on("conversation:updated", (payload) => {
+      renderConversation(payload);
+    });
+  } catch {
+    // Polling remains active if the realtime channel cannot connect.
   }
 }
 
@@ -164,18 +175,23 @@ refreshButton.addEventListener("click", async () => {
 });
 
 document.querySelector("#back-home-button")?.addEventListener("click", () => {
-  window.location.assign("/guest");
+  navigateTo("/guest");
 });
 
 document.querySelector("#open-tasks-button")?.addEventListener("click", () => {
-  window.location.assign("/guest/tasks");
+  navigateTo("/guest/tasks");
 });
 
 await loadConversation();
 startPolling();
+await startRealtimeConversation();
 
 window.addEventListener("beforeunload", () => {
   if (pollHandle) {
     window.clearInterval(pollHandle);
+  }
+
+  if (conversationSocket) {
+    conversationSocket.disconnect();
   }
 });
