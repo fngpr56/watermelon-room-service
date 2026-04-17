@@ -106,7 +106,7 @@ body {
   height: 72px;
 }
 
-.microphone-button-active {
+.microphone-button.active {
   background: var(--mic-active);
 }
 

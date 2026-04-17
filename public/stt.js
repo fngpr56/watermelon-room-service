@@ -13,9 +13,17 @@ let isListening = false;
 // -----------------------------
 // 🎤 BUTTON CONTROL
 // -----------------------------
+
+function speak(text) {
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "ru-RU";
+  speechSynthesis.speak(u);
+}
+
 button.addEventListener("click", () => {
   if (!isListening) {
     try {
+      speak("Слушаю");
       recognition.start();
       isListening = true;
       button.classList.add("active");
@@ -39,25 +47,21 @@ async function sendToBotpress(text) {
 
   window.botpress.sendMessage( text);
 
+  speak("Отправлено");
   console.log("✅ sent");
 
-  await new Promise(resolve => setTimeout(resolve, 5000));
+  await new Promise(resolve => setTimeout(resolve, 10000));
 
   const data = await getResponse(window.botpress.conversationId);
+  let response = data.payload;
+  console.log("📥 response:", response);
 
-  console.log("📥 response:", data.payload);
-}
-
-function extractMessages(data) {
-  if (!data) return [];
-
-  if (Array.isArray(data.messages)) return data.messages;
-
-  if (data.message) return [data.message];
-
-  if (data.payload) return [data]; // <-- твой случай
-
-  return [];
+    window.dispatchEvent(new CustomEvent("botpress:response", {
+    detail: {
+        response,
+        text
+    }
+  }));
 }
 
 // -----------------------------

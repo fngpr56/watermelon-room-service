@@ -1,113 +1,107 @@
 import { z } from "zod";
-
 import { ApiError } from "../utils/apiError.js";
-import { emitInventoryUpdated } from "../sockets/index.js";
+
 import {
-  createRoomRequest,
-  deleteRoomRequest,
-  listRequestCatalog,
-  listRoomRequests,
-  updateRoomRequest,
+  createRequest,
+  deleteRequest,
+  listRequests,
+  updateRequest,
 } from "../services/requests.service.js";
 
-const requestSchema = z.object({
-  fullRequest: z.string().trim().min(1).max(2000),
-  category: z.string().trim().max(50).nullable(),
+/**
+ * SCHEMA
+ */
+const baseSchema = z.object({
+  roomId: z.number().int().positive(),
+  staffId: z.number().int().positive().nullable().optional(),
+  fullRequest: z.string().trim().min(1),
+  category: z.string().trim().max(50).nullable().optional(),
   statusId: z.number().int().positive(),
-  notes: z.string().trim().max(2000).nullable(),
-  etaMinutes: z.number().int().min(0).nullable(),
+  notes: z.string().trim().nullable().optional(),
+  requestDate: z.string().optional(),
+  completeDate: z.string().nullable().optional(),
 });
 
-const createRequestSchema = requestSchema.extend({
-  inventoryItemId: z.number().int().positive().nullable().optional(),
-  quantityRequested: z.number().int().positive().nullable().optional(),
-});
+const createSchema = baseSchema;
+const updateSchema = baseSchema.partial();
 
-function mapDbError(error) {
-  if (error?.code === "ER_NO_SUCH_TABLE" || error?.errno === 1146) {
-    return new ApiError(409, "Database schema is out of date. Run sql/migrate_inventory_assignments.sql.");
+/**
+ * UUID CHECK
+ */
+function parseId(id) {
+  const uuidRegex =
+    /^[0-9a-f-]{36}$/i;
+
+  if (!uuidRegex.test(id)) {
+    throw new ApiError(400, "Invalid request id");
   }
 
-  return error;
+  return id;
 }
 
-function normalizeOptionalNumber(value) {
-  if (value === null || value === undefined || String(value).trim() === "") {
-    return null;
-  }
-
-  return Number(value);
-}
-
-function normalizePayload(body) {
-  const rawEta = body?.etaMinutes;
-
+/**
+ * NORMALIZER
+ */
+function normalize(body) {
   return {
-    fullRequest: String(body?.fullRequest || "").trim(),
+    roomId: Number(body?.roomId),
+    staffId:
+      body?.staffId !== undefined && body?.staffId !== null
+        ? Number(body.staffId)
+        : null,
+    fullRequest: String(body?.fullRequest ?? "").trim(),
     category: body?.category ? String(body.category).trim() : null,
-    statusId: Number(body?.statusId || 1),
+    statusId: Number(body?.statusId),
     notes: body?.notes ? String(body.notes).trim() : null,
-    etaMinutes:
-      rawEta === null || rawEta === undefined || String(rawEta).trim() === "" ? null : Number(rawEta),
-    inventoryItemId: normalizeOptionalNumber(body?.inventoryItemId),
-    quantityRequested: normalizeOptionalNumber(body?.quantityRequested),
+    requestDate: body?.requestDate,
+    completeDate: body?.completeDate,
   };
 }
 
-export async function getRequestCatalog(req, res, next) {
-  try {
-    const items = await listRequestCatalog();
-    res.json({ items });
-  } catch (error) {
-    next(error);
-  }
-}
-
+/**
+ * HANDLERS
+ */
 export async function getRequests(req, res, next) {
   try {
-    const items = await listRoomRequests(req.session.roomId);
+    const items = await listRequests();
     res.json({ items });
-  } catch (error) {
-    next(error);
+  } catch (e) {
+    next(e);
   }
 }
 
 export async function createRequestRecord(req, res, next) {
   try {
-    const payload = createRequestSchema.parse(normalizePayload(req.body));
-    const item = await createRoomRequest(req.session.roomId, payload);
-
-    if (item.inventoryMatch) {
-      emitInventoryUpdated({
-        inventoryItemId: item.inventoryMatch.id,
-        roomId: req.session.roomId,
-        requestId: item.id,
-        assignmentId: item.inventoryAssignment?.id || null,
-        changeType: "guest-request-created",
-      });
-    }
-
+    const payload = createSchema.parse(normalize(req.body));
+    const item = await createRequest(payload);
     res.status(201).json({ item });
-  } catch (error) {
-    next(error.name === "ZodError" ? new ApiError(400, "Invalid request payload") : mapDbError(error));
+  } catch (e) {
+    next(e.name === "ZodError"
+      ? new ApiError(400, "Invalid request payload")
+      : e);
   }
 }
 
 export async function updateRequestRecord(req, res, next) {
   try {
-    const payload = requestSchema.parse(normalizePayload(req.body));
-    const item = await updateRoomRequest(String(req.params.requestId || ""), req.session.roomId, payload);
+    const id = parseId(req.params.requestId);
+    const payload = updateSchema.parse(normalize(req.body));
+
+    const item = await updateRequest(id, payload);
     res.json({ item });
-  } catch (error) {
-    next(error.name === "ZodError" ? new ApiError(400, "Invalid request payload") : error);
+  } catch (e) {
+    next(e.name === "ZodError"
+      ? new ApiError(400, "Invalid request payload")
+      : e);
   }
 }
 
-export async function removeRequestRecord(req, res, next) {
+export async function removeRequest(req, res, next) {
   try {
-    await deleteRoomRequest(String(req.params.requestId || ""), req.session.roomId);
+    const id = parseId(req.params.requestId);
+    await deleteRequest(id);
     res.status(204).send();
-  } catch (error) {
-    next(error);
+  } catch (e) {
+    next(e);
   }
 }
