@@ -113,8 +113,9 @@ async function getStatusByCode(conn, code) {
   return rows[0] || null;
 }
 
-async function getRunnerRequestRowById(conn, requestId) {
-  const rows = await conn.query(`${runnerRequestSelect} AND r.id = ? LIMIT 1`, [requestId]);
+async function getRunnerRequestRowById(conn, requestId, options = {}) {
+  const lockClause = options.forUpdate ? " FOR UPDATE" : "";
+  const rows = await conn.query(`${runnerRequestSelect} AND r.id = ? LIMIT 1${lockClause}`, [requestId]);
   return rows[0] || null;
 }
 
@@ -160,8 +161,8 @@ async function listRunnerItemsForRequestIds(conn, requestIds) {
   return itemMap;
 }
 
-async function getRunnerRequestDetails(conn, requestId) {
-  const row = await getRunnerRequestRowById(conn, requestId);
+async function getRunnerRequestDetails(conn, requestId, options = {}) {
+  const row = await getRunnerRequestRowById(conn, requestId, options);
 
   if (!row) {
     return null;
@@ -320,7 +321,7 @@ export async function acceptRunnerRequest(requestId, staffSession) {
     conn = await pool.getConnection();
     await conn.beginTransaction();
 
-    const request = await getRunnerRequestDetails(conn, requestId);
+    const request = await getRunnerRequestDetails(conn, requestId, { forUpdate: true });
     assertRunnerRequestExists(request);
 
     if (request.status.code !== "received") {
@@ -365,7 +366,7 @@ export async function declineRunnerRequest(requestId, staffSession) {
     conn = await pool.getConnection();
     await conn.beginTransaction();
 
-    const request = await getRunnerRequestDetails(conn, requestId);
+    const request = await getRunnerRequestDetails(conn, requestId, { forUpdate: true });
     assertRunnerRequestExists(request);
 
     if (request.status.code !== "received") {
@@ -421,7 +422,7 @@ export async function completeRunnerRequest(requestId, staffSession) {
     conn = await pool.getConnection();
     await conn.beginTransaction();
 
-    const request = await getRunnerRequestDetails(conn, requestId);
+    const request = await getRunnerRequestDetails(conn, requestId, { forUpdate: true });
     assertRunnerRequestExists(request);
 
     if (Number(request.staff.id) !== Number(staffSession.staffId)) {
