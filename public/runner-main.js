@@ -51,9 +51,14 @@ if (!session || session.role !== "runner") {
   const resolvedTableBody = document.querySelector("#resolved-table-body");
 
   let runnerRequests = [];
+  let previousPendingCount = 0;
+  let soundEnabled = false;
+  const requestSound = new Audio("notification_sound_final.wav");
+  requestSound.preload = "auto";
   let runnerSocket = null;
   let runnerPollHandle = null;
   let runnerRefreshHandle = null;
+  
 
   function setStatus(message, tone = "") {
     statusNode.textContent = message;
@@ -289,6 +294,27 @@ if (!session || session.role !== "runner") {
     renderResolvedTable();
   }
 
+  function enableSound() {
+  soundEnabled = true;
+  window.removeEventListener("click", enableSound);
+  window.removeEventListener("keydown", enableSound);
+  }
+
+  window.addEventListener("click", enableSound, { once: true });
+  window.addEventListener("keydown", enableSound, { once: true });
+
+  async function playRequestSound() {
+    if (!soundEnabled) {
+      return;
+    }
+
+    try {
+      requestSound.currentTime = 0;
+      await requestSound.play();
+    } catch {
+    }
+  }
+
   async function requestJson(url, options = {}) {
     const response = await fetchWithSession(url, {
       headers: {
@@ -309,8 +335,19 @@ if (!session || session.role !== "runner") {
 
   async function loadRunnerRequests() {
     const payload = await requestJson("/api/runner/requests");
-    runnerRequests = payload.items || [];
+    const nextRequests = payload.items || [];
+
+    const nextPendingCount = nextRequests.filter((request) => request.status.code === "received").length;
+    const shouldPlaySound = previousPendingCount > 0 && nextPendingCount > previousPendingCount;
+
+    runnerRequests = nextRequests;
     renderRunnerTables();
+
+    if (shouldPlaySound) {
+      await playRequestSound();
+    }
+
+    previousPendingCount = nextPendingCount;
   }
 
   function scheduleRunnerRefresh() {
