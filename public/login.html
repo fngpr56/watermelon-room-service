@@ -24,14 +24,19 @@
             />
 
             <label class="sr-only" for="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autocomplete="current-password"
-              placeholder="Password"
-              required
-            />
+            <div class="password-field-row">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                placeholder="Password"
+                required
+              />
+              <button class="secondary password-toggle" type="button" id="toggle-password-button" aria-label="Show password">
+                Show
+              </button>
+            </div>
 
             <div class="button-row login-button-row">
               <button class="primary login-button" type="submit" id="submit-button">LOGIN</button>

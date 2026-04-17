@@ -22,6 +22,14 @@ export function showGuestPage(req, res) {
   res.sendFile(path.join(publicDir, "guest.html"));
 }
 
+export function showGuestTasksPage(req, res) {
+  res.sendFile(path.join(publicDir, "guest-tasks.html"));
+}
+
+export function showGuestHelpPage(req, res) {
+  res.sendFile(path.join(publicDir, "guest-help.html"));
+}
+
 export function showStaffPage(req, res) {
   res.sendFile(path.join(publicDir, "staff.html"));
 }
