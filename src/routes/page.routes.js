@@ -8,6 +8,7 @@ import {
   showGuestPage,
   showGuestTasksPage,
   showLoginPage,
+  showReceptionistPage,
   showRunnerPage,
   showStaffPage,
 } from "../controllers/page.controller.js";
@@ -23,6 +24,7 @@ router.get("/guest", requireRole("guest"), showGuestPage);
 router.get("/guest/tasks", requireRole("guest"), showGuestTasksPage);
 router.get("/guest/help", requireRole("guest"), showGuestHelpPage);
 router.get("/staff", requireRole("staff"), showStaffPage);
+router.get("/receptionist", requireStaffRole("receptionist"), showReceptionistPage);
 router.get("/runner", requireStaffRole("runner"), showRunnerPage);
 
 export default router;

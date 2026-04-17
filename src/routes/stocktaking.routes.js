@@ -2,9 +2,13 @@
  * Route definitions for stocktaking entry CRUD operations.
  */
 import { Router } from "express";
+
+import { requireApiRole } from "../middleware/auth.js";
 import * as controller from "../controllers/stocktaking.controller.js";
 
 const router = Router();
+
+router.use(requireApiRole("staff"));
 
 router.get("/", controller.listStocktaking);
 router.post("/", controller.createStocktaking);

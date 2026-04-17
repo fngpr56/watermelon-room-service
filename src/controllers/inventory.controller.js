@@ -3,7 +3,7 @@
  */
 import { z } from "zod";
 import { ApiError } from "../utils/apiError.js";
-import { emitInventoryUpdated } from "../sockets/index.js";
+import { emitInventoryUpdated, emitReceptionistOverviewUpdated } from "../sockets/index.js";
 
 import {
   assignInventoryToRoom,
@@ -158,6 +158,7 @@ export async function createInventoryRecord(req, res, next) {
 
     const item = await createInventoryItem(payload);
     emitInventoryUpdated({ inventoryItemId: item.id, changeType: "item-created" });
+    emitReceptionistOverviewUpdated({ inventoryItemId: item.id, changeType: "inventory-item-created" });
 
     res.status(201).json({ item });
   } catch (error) {
@@ -180,6 +181,7 @@ export async function updateInventoryRecord(req, res, next) {
 
     const item = await updateInventoryItem(id, payload);
     emitInventoryUpdated({ inventoryItemId: item.id, changeType: "item-updated" });
+    emitReceptionistOverviewUpdated({ inventoryItemId: item.id, changeType: "inventory-item-updated" });
 
     res.json({ item });
   } catch (error) {
@@ -200,6 +202,7 @@ export async function removeInventory(req, res, next) {
 
     await deleteInventoryItem(id);
     emitInventoryUpdated({ inventoryItemId: id, changeType: "item-deleted" });
+    emitReceptionistOverviewUpdated({ inventoryItemId: id, changeType: "inventory-item-deleted" });
 
     res.status(204).send();
   } catch (error) {
@@ -216,6 +219,12 @@ export async function createInventoryAssignmentRecord(req, res, next) {
       roomId: item.room.id,
       assignmentId: item.id,
       changeType: "assignment-created",
+    });
+    emitReceptionistOverviewUpdated({
+      inventoryItemId: item.inventoryItem.id,
+      roomId: item.room.id,
+      assignmentId: item.id,
+      changeType: "inventory-assignment-created",
     });
     res.status(201).json({ item });
   } catch (error) {
@@ -238,6 +247,12 @@ export async function updateInventoryAssignmentRecord(req, res, next) {
       assignmentId: item.id,
       changeType: "assignment-updated",
     });
+    emitReceptionistOverviewUpdated({
+      inventoryItemId: item.inventoryItem.id,
+      roomId: item.room.id,
+      assignmentId: item.id,
+      changeType: "inventory-assignment-updated",
+    });
     res.json({ item });
   } catch (error) {
     next(
@@ -257,6 +272,12 @@ export async function removeInventoryAssignmentRecord(req, res, next) {
       roomId: item.room.id,
       assignmentId: item.id,
       changeType: "assignment-deleted",
+    });
+    emitReceptionistOverviewUpdated({
+      inventoryItemId: item.inventoryItem.id,
+      roomId: item.room.id,
+      assignmentId: item.id,
+      changeType: "inventory-assignment-deleted",
     });
     res.status(204).send();
   } catch (error) {
