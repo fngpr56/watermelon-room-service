@@ -1,3 +1,6 @@
+/**
+ * Server bootstrap that verifies dependencies, attaches Socket.IO, and starts HTTP listening.
+ */
 import http from "http";
 import { Server } from "socket.io";
 
@@ -19,7 +22,10 @@ async function bootstrap() {
 
   // Log startup problems like port conflicts in one place.
   server.on("error", (error) => {
-    logger.error("HTTP server error", error);
+    logger.error("HTTP server error", {
+      port: env.port,
+      error,
+    });
     process.exit(1);
   });
 
@@ -33,12 +39,18 @@ async function bootstrap() {
   registerSocketHandlers(io);
 
   server.listen(env.port, () => {
-    logger.info(`Server running on http://localhost:${env.port}`);
+    logger.info("Server running", {
+      url: `http://localhost:${env.port}`,
+      nodeEnv: env.nodeEnv,
+    });
   });
 }
 
 // Stop startup if any required setup step fails.
 bootstrap().catch((error) => {
-  logger.error("Failed to start server", error);
+  logger.error("Failed to start server", {
+    port: env.port,
+    error,
+  });
   process.exit(1);
 });

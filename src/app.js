@@ -1,3 +1,6 @@
+/**
+ * Express application wiring: middleware, static assets, API routes, and fallback handlers.
+ */
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
@@ -24,9 +27,35 @@ import { swaggerSpec } from "./config/swagger.js";
 
 const app = express();
 const publicDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
+
+function buildRequestLogMessage(tokens, req, res) {
+  const responseTimeMs = Number(tokens["response-time"](req, res) || 0);
+  const contentLength = tokens.res(req, res, "content-length");
+
+  return JSON.stringify({
+    requestId: tokens.requestId(req, res) || "-",
+    method: tokens.method(req, res),
+    path: tokens.url(req, res),
+    statusCode: Number(tokens.status(req, res) || 0) || null,
+    responseTimeMs: Number.isFinite(responseTimeMs) ? Number(responseTimeMs.toFixed(1)) : null,
+    contentLengthBytes: contentLength ? Number(contentLength) : null,
+    ip: req.ip,
+  });
+}
+
 const requestLogStream = {
   write(message) {
-    logger.http(message.trim());
+    const trimmedMessage = message.trim();
+
+    if (!trimmedMessage) {
+      return;
+    }
+
+    try {
+      logger.http("HTTP request", JSON.parse(trimmedMessage));
+    } catch {
+      logger.http(trimmedMessage);
+    }
   },
 };
 
@@ -52,7 +81,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
-app.use(morgan(":requestId :method :url :status :response-time ms", { stream: requestLogStream }));
+app.use(morgan(buildRequestLogMessage, { stream: requestLogStream }));
 
 // Serve the plain browser files from /public.
 app.use(express.static(publicDir, { index: false }));
