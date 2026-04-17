@@ -28,6 +28,7 @@ Watermelon Room Service is a hotel operations web app built with Express, MariaD
 ### Staff-facing features
 
 - a single browser dashboard for hotel operations staff
+- dedicated `runner` and `receptionist` staff roles in addition to the existing staff roles
 - staff create, update, and delete forms with table-based record management
 - room create, update, and delete forms from the same dashboard
 - password show/hide controls on login, staff, and room forms
@@ -35,6 +36,8 @@ Watermelon Room Service is a hotel operations web app built with Express, MariaD
 - guest conversation inbox for front desk workflows
 - housekeeping-only inventory management panels
 - recent inventory assignment create, edit, and delete actions for housekeeping users
+- a runner-only delivery queue page for inventory-backed guest requests
+- a receptionist-only operations page with live metrics, charts, and stocktaking reporting
 
 ### Inventory and fulfillment features
 
@@ -42,13 +45,18 @@ Watermelon Room Service is a hotel operations web app built with Express, MariaD
 - room inventory assignments that immediately reduce stock levels
 - guest request matching that can create linked `request_items`, `inventory_transactions`, and `inventory_room_assignments` rows
 - automatic attempt to assign matched guest inventory requests to housekeeping staff when possible
+- inventory-backed guest requests are surfaced to runners through a dedicated queue with accept, decline, and complete actions
 - request status management through a dedicated statuses API
 - stocktaking CRUD endpoints for reconciliation and audit-style adjustments
+- stocktaking validation requires a reason when expected and physical counts do not match
+- receptionist stocktaking entries feed a current-month discrepancy report with reason and activity charts
 
 ### Realtime, docs, and operational features
 
 - realtime guest and staff conversation updates through Socket.IO
 - realtime housekeeping inventory refresh events through Socket.IO
+- realtime runner queue refresh events through Socket.IO
+- realtime receptionist overview refresh events through Socket.IO
 - Swagger UI and raw OpenAPI output
 - per-request `X-Request-Id` correlation headers
 - structured application logging with redaction of sensitive auth and session fields
@@ -62,6 +70,8 @@ Watermelon Room Service is a hotel operations web app built with Express, MariaD
 - `GET /guest/tasks` serves the guest request history page
 - `GET /guest/help` serves the guest help conversation page
 - `GET /staff` serves the staff operations dashboard
+- `GET /runner` serves the runner delivery queue page
+- `GET /receptionist` serves the receptionist operations and stocktaking page
 
 ## Main API routes
 
@@ -123,6 +133,18 @@ Watermelon Room Service is a hotel operations web app built with Express, MariaD
 - `PUT /api/stocktaking/:id`
 - `DELETE /api/stocktaking/:id`
 
+### Runner
+
+- `GET /api/runner/requests`
+- `POST /api/runner/requests/:requestId/accept`
+- `POST /api/runner/requests/:requestId/decline`
+- `POST /api/runner/requests/:requestId/complete`
+
+### Receptionist
+
+- `GET /api/receptionist/overview`
+- `POST /api/receptionist/stocktaking`
+
 ### Docs
 
 - `GET /api-docs`
@@ -167,15 +189,35 @@ The staff dashboard groups several hotel operations workflows into one authentic
 - non-housekeeping staff do not see those inventory sections and cannot use the protected inventory API flow
 - housekeeping can create, update, and delete inventory items as well as create, edit, and delete recent room assignments
 - the dashboard also acts as the live receiver for housekeeping inventory refresh broadcasts
+- runner staff get a separate queue page for inventory-backed request fulfillment
+- receptionist staff get a separate overview page with room, request, and stocktaking visibility
 
 ## Realtime and fallback behavior
 
 - staff conversation lists and guest help threads receive `conversation:updated` events
 - guest sockets join room-specific conversation channels so each room only receives its own thread updates
-- staff sockets join a shared staff conversation channel, and housekeeping staff also join a separate inventory channel
+- staff sockets join a shared staff conversation channel, and housekeeping, runner, and receptionist roles also join their own role-specific realtime rooms
 - housekeeping dashboards receive `inventory:updated` events after stock-affecting changes
+- runner dashboards receive `runner:request-updated` events after queue-affecting request changes
+- receptionist dashboards receive `receptionist:overview-updated` events after request, room, inventory, runner, or stocktaking changes
 - the server validates Socket.IO sessions using the same signed token model as HTTP routes
 - the guest help page keeps a polling fallback in addition to sockets so conversation refresh still works during socket failure
+
+## Runner queue flow
+
+- inventory-backed guest requests enter the runner queue in `received` status
+- runners can accept, decline, or complete requests from their dedicated queue page
+- queue updates are pushed in realtime through Socket.IO, with polling fallback if the socket is unavailable
+- the runner service locks queue records during accept, decline, and complete transitions to prevent concurrent handling races
+- the runner page includes client-side notification sound support for new queue arrivals after the browser has received a user interaction
+
+## Receptionist overview flow
+
+- the receptionist page combines occupancy, arrivals, departures, request mix, guest follow-up needs, and recent request activity in one live page
+- the page also includes a stocktaking form where the receptionist enters an item, expected count, and physical count while the discrepancy is calculated automatically
+- when the discrepancy is not zero, the API requires a reason such as `damaged`, `theft`, `miscounted`, or `supplier_error`
+- the receptionist overview exposes current-month stocktaking summaries, discrepancy reason charts, daily activity charts, and recent stocktaking entries
+- if realtime updates fail, the receptionist page still refreshes through periodic polling
 
 ## Setup
 
