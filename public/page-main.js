@@ -35,7 +35,7 @@ async function logout() {
   window.location.assign("/login");
 }
 
-export async function initializeDashboard({ expectedUserType, titlePrefix, metaEntries }) {
+export async function initializeDashboard({ expectedUserType, titlePrefix, metaEntries, resolveTitle }) {
   const session = await fetchSession();
 
   if (!session || session.userType !== expectedUserType) {
@@ -47,7 +47,7 @@ export async function initializeDashboard({ expectedUserType, titlePrefix, metaE
   const logoutButton = document.querySelector("#logout-button");
   const statusNode = document.querySelector("#status");
 
-  title.textContent = `${titlePrefix}, ${session.displayName}`;
+  title.textContent = typeof resolveTitle === "function" ? resolveTitle(session) : `${titlePrefix}, ${session.displayName}`;
   renderMeta(metaEntries(session));
   statusNode.textContent = "Authenticated with a signed HTTP-only session cookie.";
   statusNode.className = "status ok";

@@ -12,7 +12,9 @@ import staffRoutes from "./routes/staff.routes.js";
 import pageRoutes from "./routes/page.routes.js";
 import roomsRoutes from "./routes/rooms.routes.js";
 import inventoryRoutes from "./routes/inventory.routes.js";
+import statusesRoutes from "./routes/statuses.routes.js";
 import requestsRoutes from "./routes/requests.routes.js";
+import conversationsRoutes from "./routes/conversations.routes.js";
 import { notFound } from "./middleware/notFound.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { logger } from "./utils/logger.js";
@@ -61,9 +63,11 @@ app.get("/api-docs.json", (req, res) => {
 // API routes come before page routes so the browser dashboard can call them.
 app.use("/api/auth", authRoutes);
 app.use("/api/staff", staffRoutes);
+app.use("/api/statuses", statusesRoutes);
 app.use("/api/rooms", roomsRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/requests", requestsRoutes);
+app.use("/api/conversations", conversationsRoutes);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, { customSiteTitle: "API Docs" }));
 app.use("/", pageRoutes);
 

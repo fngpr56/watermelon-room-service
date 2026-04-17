@@ -191,6 +191,42 @@
           </article>
         </section>
 
+        <section class="management-layout">
+          <article class="tile manager-panel">
+            <div class="section-heading section-heading-row">
+              <div>
+                <strong>Guest help conversations</strong>
+                <p class="muted">Rooms open help threads here. Select a conversation to read the full exchange.</p>
+              </div>
+              <span id="conversation-count" class="table-count">0 conversations</span>
+            </div>
+
+            <div id="conversation-list" class="conversation-list"></div>
+          </article>
+
+          <article class="tile manager-panel">
+            <div class="section-heading">
+              <strong id="conversation-title">Select a conversation</strong>
+              <p class="muted" id="conversation-subtitle">Only staff with the `front_desk` role can answer guest questions.</p>
+            </div>
+
+            <div id="conversation-thread" class="message-list empty-thread"></div>
+
+            <form id="conversation-form" class="manager-form">
+              <label class="label" for="conversation-message">
+                Reply
+                <textarea id="conversation-message" name="message" rows="4" maxlength="2000" placeholder="Type a reply to the guest..."></textarea>
+              </label>
+
+              <div class="button-row">
+                <button class="primary" id="conversation-submit-button" type="submit">Send reply</button>
+                <button class="secondary" id="conversation-refresh-button" type="button">Refresh</button>
+              </div>
+              <p id="conversation-status" class="status" aria-live="polite"></p>
+            </form>
+          </article>
+        </section>
+
         <div class="button-row">
           <button class="secondary" id="logout-button" type="button">Log out</button>
         </div>

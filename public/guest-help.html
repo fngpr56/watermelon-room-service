@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Guest Help</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card page-panel page-layout">
+        <div>
+          <span class="eyebrow">Guest Help</span>
+          <h2 id="page-title">Guest Help</h2>
+          <p class="muted">Start a room conversation with the front desk. Your messages stay attached to your room.</p>
+        </div>
+
+        <div class="meta" id="meta"></div>
+
+        <div class="button-row page-nav">
+          <button class="secondary" id="back-home-button" type="button">Back home</button>
+          <button class="secondary" id="open-tasks-button" type="button">Tasks</button>
+          <button class="secondary" id="logout-button" type="button">Log out</button>
+        </div>
+
+        <article class="tile manager-panel">
+          <div class="section-heading section-heading-row">
+            <div>
+              <strong id="guest-conversation-title">Front desk conversation</strong>
+              <p class="muted">Messages from your room appear in the staff inbox. Front desk staff can answer here.</p>
+            </div>
+            <span id="guest-message-count" class="table-count">0 messages</span>
+          </div>
+
+          <div id="guest-conversation-thread" class="message-list empty-thread"></div>
+
+          <form id="guest-conversation-form" class="manager-form">
+            <label class="label" for="guest-message">
+              Message
+              <textarea id="guest-message" name="message" rows="4" maxlength="2000" placeholder="Write a question for the front desk..."></textarea>
+            </label>
+
+            <div class="button-row">
+              <button class="primary" id="guest-conversation-submit-button" type="submit">Send message</button>
+              <button class="secondary" id="guest-conversation-refresh-button" type="button">Refresh</button>
+            </div>
+            <p id="guest-conversation-status" class="status" aria-live="polite"></p>
+          </form>
+        </article>
+
+        <p id="status" class="status" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <script type="module" src="/guest-help.js"></script>
+  </body>
+</html>

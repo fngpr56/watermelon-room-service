@@ -3,29 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Guest Dashboard</title>
+    <title>Guest Home</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <main class="shell">
-      <section class="card page-panel page-layout">
+      <section class="card page-panel page-layout guest-home-panel">
         <div>
-          <span class="eyebrow">Guest Area</span>
-          <h2 id="page-title">Guest dashboard</h2>
-          <p class="muted">This is the post-login landing page for room guests.</p>
+          <span class="eyebrow">Guest Home</span>
+          <h2 id="page-title">Room</h2>
+          <p class="muted">Use tasks to manage room-service requests or open help to message the front desk.</p>
         </div>
 
         <div class="meta" id="meta"></div>
 
-        <section class="grid">
-          <article class="tile">
-            <strong>Room service requests</strong>
-            <p>Next step: connect this page to the request creation flow.</p>
-          </article>
-          <article class="tile">
-            <strong>Stay details</strong>
-            <p>Your room information comes from the authenticated room record.</p>
-          </article>
+        <section class="guest-stage tile">
+          <button class="microphone-button" id="microphone-button" type="button" aria-label="Open help conversation">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M12 15.5a3.5 3.5 0 0 0 3.5-3.5V7a3.5 3.5 0 1 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Zm6.25-3.75a.75.75 0 0 0-1.5 0 4.75 4.75 0 1 1-9.5 0 .75.75 0 0 0-1.5 0 6.26 6.26 0 0 0 5.5 6.21V21a.75.75 0 0 0 1.5 0v-3.04a6.26 6.26 0 0 0 5.5-6.21Z" fill="currentColor"></path>
+            </svg>
+          </button>
+
+          <div class="home-actions">
+            <button class="secondary action-pill" id="tasks-button" type="button">Tasks</button>
+            <button class="secondary action-pill" id="help-button" type="button">Help</button>
+          </div>
         </section>
 
         <div class="button-row">

@@ -1,11 +1,25 @@
 const form = document.querySelector("#login-form");
 const statusNode = document.querySelector("#status");
 const submitButton = document.querySelector("#submit-button");
+const passwordInput = document.querySelector("#password");
+const togglePasswordButton = document.querySelector("#toggle-password-button");
 
 function setStatus(message, tone = "") {
   statusNode.textContent = message;
   statusNode.className = `status ${tone}`.trim();
 }
+
+togglePasswordButton?.addEventListener("click", () => {
+  const isHidden = passwordInput?.type === "password";
+
+  if (!passwordInput) {
+    return;
+  }
+
+  passwordInput.type = isHidden ? "text" : "password";
+  togglePasswordButton.textContent = isHidden ? "Hide" : "Show";
+  togglePasswordButton.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+});
 
 form?.addEventListener("submit", async (event) => {
   event.preventDefault();

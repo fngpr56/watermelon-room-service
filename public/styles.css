@@ -137,7 +137,8 @@ h2 {
   min-width: 0;
 }
 
-input {
+input,
+textarea {
   width: 100%;
   border: 1px solid rgba(31, 36, 48, 0.14);
   border-radius: 16px;
@@ -158,7 +159,8 @@ select {
   transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
 }
 
-input:focus {
+input:focus,
+textarea:focus {
   outline: none;
   border-color: rgba(13, 107, 99, 0.7);
   box-shadow: 0 0 0 4px rgba(13, 107, 99, 0.12);
@@ -279,6 +281,11 @@ button:disabled {
 .manager-form {
   display: grid;
   gap: 16px;
+}
+
+textarea {
+  min-height: 120px;
+  resize: vertical;
 }
 
 .form-grid {
@@ -440,6 +447,24 @@ button:disabled {
   gap: 16px;
 }
 
+.password-field-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.password-field-row input {
+  min-width: 0;
+}
+
+.password-toggle {
+  justify-self: center;
+  min-width: 82px;
+  min-height: 44px;
+  padding: 11px 16px;
+  border-radius: 12px;
+}
+
 .login-form input {
   border-radius: 12px;
   border: 1px solid rgba(79, 63, 45, 0.55);
@@ -481,6 +506,175 @@ button:disabled {
   margin: 0;
   text-align: center;
   font-size: 0.9rem;
+}
+
+.page-nav {
+  align-items: center;
+}
+
+.guest-home-panel {
+  gap: 24px;
+}
+
+.guest-stage {
+  min-height: 360px;
+  display: grid;
+  place-items: center;
+  gap: 22px;
+  background:
+    radial-gradient(circle at top, rgba(191, 161, 100, 0.24), transparent 52%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(244, 237, 226, 0.96));
+}
+
+.microphone-button {
+  width: 180px;
+  height: 180px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #2f2825;
+  background: linear-gradient(180deg, rgba(232, 219, 194, 0.94), rgba(223, 206, 173, 0.94));
+  box-shadow: 0 20px 40px rgba(80, 60, 34, 0.12);
+}
+
+.microphone-button-active {
+  color: #f4fbff;
+  background: linear-gradient(180deg, rgba(54, 132, 255, 0.95), rgba(24, 95, 205, 0.98));
+  box-shadow: 0 20px 40px rgba(23, 77, 165, 0.25);
+}
+
+.microphone-button svg {
+  width: 74px;
+  height: 74px;
+}
+
+.home-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.action-pill {
+  min-width: 120px;
+}
+
+.conversation-list {
+  display: grid;
+  gap: 12px;
+  max-height: 520px;
+  overflow-y: auto;
+}
+
+.empty-list-state {
+  color: #7a6b59;
+}
+
+.conversation-item {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.74);
+  text-align: left;
+}
+
+.conversation-item.active {
+  border-color: rgba(191, 161, 100, 0.54);
+  background: linear-gradient(180deg, rgba(255, 252, 244, 0.96), rgba(247, 237, 215, 0.98));
+}
+
+.conversation-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.conversation-item-tag {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(191, 161, 100, 0.16);
+  color: #6f5c39;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.conversation-preview,
+.conversation-item-meta {
+  margin: 0;
+}
+
+.conversation-preview {
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.conversation-item-meta {
+  color: #7a6b59;
+  font-size: 0.88rem;
+}
+
+.message-list {
+  display: grid;
+  gap: 14px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.empty-thread {
+  align-content: center;
+}
+
+.empty-thread-message {
+  color: #7a6b59;
+  text-align: center;
+}
+
+.message-bubble {
+  max-width: min(100%, 560px);
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  box-shadow: 0 10px 24px rgba(55, 42, 30, 0.08);
+}
+
+.message-bubble.mine {
+  justify-self: end;
+  background: linear-gradient(180deg, rgba(191, 161, 100, 0.95), rgba(179, 148, 86, 0.98));
+  color: #fffaf2;
+}
+
+.message-bubble.other {
+  justify-self: start;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text);
+}
+
+.message-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: #7a6b59;
+}
+
+.message-bubble.mine .message-meta {
+  color: rgba(255, 250, 242, 0.86);
+}
+
+.message-body {
+  margin: 0;
+  line-height: 1.6;
+  white-space: pre-wrap;
 }
 
 @media (max-width: 820px) {
@@ -526,5 +720,32 @@ button:disabled {
 
   .form-span-2 {
     grid-column: auto;
+  }
+
+  .page-nav {
+    justify-content: flex-start;
+  }
+
+  .guest-stage {
+    min-height: 300px;
+  }
+
+  .microphone-button {
+    width: 144px;
+    height: 144px;
+  }
+
+  .microphone-button svg {
+    width: 58px;
+    height: 58px;
+  }
+
+  .conversation-item-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .message-list {
+    max-height: 360px;
   }
 }

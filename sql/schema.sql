@@ -145,6 +145,39 @@ CREATE TABLE `stocktaking_entries` (
   CONSTRAINT `chk_stocktaking_physical_nonnegative` CHECK (`physical_count` >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+CREATE TABLE `room_conversations` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `room_id` INT NOT NULL,
+  `assigned_staff_id` INT DEFAULT NULL,
+  `last_message_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_room_conversations_room_id` (`room_id`),
+  KEY `idx_room_conversations_assigned_staff_id` (`assigned_staff_id`),
+  KEY `idx_room_conversations_last_message_at` (`last_message_at`),
+  CONSTRAINT `fk_room_conversations_room` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_room_conversations_assigned_staff` FOREIGN KEY (`assigned_staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `room_conversation_messages` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `conversation_id` BIGINT NOT NULL,
+  `room_id` INT NOT NULL,
+  `staff_id` INT DEFAULT NULL,
+  `sender_type` ENUM('guest','staff') NOT NULL,
+  `message` TEXT NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_room_conversation_messages_conversation_id` (`conversation_id`),
+  KEY `idx_room_conversation_messages_room_id` (`room_id`),
+  KEY `idx_room_conversation_messages_staff_id` (`staff_id`),
+  KEY `idx_room_conversation_messages_created_at` (`created_at`),
+  CONSTRAINT `fk_room_conversation_messages_conversation` FOREIGN KEY (`conversation_id`) REFERENCES `room_conversations` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_room_conversation_messages_room` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_room_conversation_messages_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 INSERT INTO `request_statuses` (`id`, `code`, `label`, `color`) VALUES
 (1, 'received', 'Received', 'blue'),
 (2, 'in_progress', 'In Progress', 'orange'),
@@ -154,7 +187,7 @@ INSERT INTO `request_statuses` (`id`, `code`, `label`, `color`) VALUES
 (6, 'cancelled', 'Cancelled', 'gray');
 
 INSERT INTO `rooms` (`id`, `room_number`, `password_hash`, `owner`, `date_in`, `date_out`) VALUES
-(1, 101, '$2b$12$kQw7mQ3v3lR8N5k6U1wD4e9H7q2J8m3L0pXrVh4tYc7nB2sF1gA1K', 'John Carter', '2026-04-15 14:00:00', '2026-04-20 11:00:00'),
+(1, 101, '$2b$10$nZhjGVwBmIb4j4a6FX78lOF7xqJYPZ6czvtWNVW.iLpyb/ocvHOPC', 'John Carter', '2026-04-15 14:00:00', '2026-04-20 11:00:00'),
 (2, 102, '$2b$12$kQw7mQ3v3lR8N5k6U1wD4e9H7q2J8m3L0pXrVh4tYc7nB2sF1gA1K', 'Anna Smith', '2026-04-16 14:00:00', '2026-04-19 11:00:00'),
 (3, 201, '$2b$12$kQw7mQ3v3lR8N5k6U1wD4e9H7q2J8m3L0pXrVh4tYc7nB2sF1gA1K', 'David Miller', '2026-04-16 15:30:00', '2026-04-21 11:00:00'),
 (4, 204, '$2b$12$kQw7mQ3v3lR8N5k6U1wD4e9H7q2J8m3L0pXrVh4tYc7nB2sF1gA1K', 'Emily Brown', '2026-04-16 16:00:00', '2026-04-22 11:00:00');
@@ -163,7 +196,7 @@ INSERT INTO `staff` (`id`, `first_name`, `last_name`, `password_hash`, `birthday
 (1, 'Laura', 'Johnson', '$2b$12$kQw7mQ3v3lR8N5k6U1wD4e9H7q2J8m3L0pXrVh4tYc7nB2sF1gA1K', '1992-06-15', '+3725551001', 'laura@watermelonhotel.com', 'front_desk', '2023-01-10', 120),
 (2, 'Mark', 'Taylor', '$2b$12$kQw7mQ3v3lR8N5k6U1wD4e9H7q2J8m3L0pXrVh4tYc7nB2sF1gA1K', '1988-11-02', '+3725551002', 'mark@watermelonhotel.com', 'housekeeping', '2022-08-01', 215),
 (3, 'Sofia', 'Wilson', '$2b$12$kQw7mQ3v3lR8N5k6U1wD4e9H7q2J8m3L0pXrVh4tYc7nB2sF1gA1K', '1995-03-09', '+3725551003', 'sofia@watermelonhotel.com', 'manager', '2021-05-20', 340),
-(4, 'Test', 'Admin', '$2b$10$hHW.7x0ViintgwsWZpdu7.IunQh8Gxjz01R/spZP3OcdKTIapoJsu', NULL, NULL, 'test@test.com', 'manager', '2026-04-16', 0);
+(4, 'Test', 'Admin', '$2a$12$.U5iqAvTlcH5zk4nvUCPOuBWMOPEVCoS.3Kz1AtD.R1XILOoO74eO', NULL, NULL, 'test@test.com', 'manager', '2026-04-16', 0);
 
 INSERT INTO `inventory_items` (`id`, `name`, `category`, `unit`, `quantity_in_stock`, `quantity_reserved`, `low_stock_threshold`) VALUES
 (1, 'Bottle of Water', 'room_service', 'bottle', 40, 2, 10),
