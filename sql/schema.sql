@@ -75,7 +75,7 @@ CREATE TABLE `requests` (
   KEY `idx_requests_staff_id` (`staff_id`),
   KEY `idx_requests_status_id` (`status_id`),
   KEY `idx_requests_request_date` (`request_date`),
-  CONSTRAINT `fk_requests_room` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_requests_room` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`room_number`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `fk_requests_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `fk_requests_status` FOREIGN KEY (`status_id`) REFERENCES `request_statuses` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `chk_requests_eta_nonnegative` CHECK (`eta_minutes` IS NULL OR `eta_minutes` >= 0)

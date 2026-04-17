@@ -20,13 +20,13 @@ export const swaggerSpec = {
     { name: "Stocktaking", description: "Inventory stocktaking and audits." }
   ],
   components: {
-    securitySchemes: {
-      sessionCookie: {
-        type: "apiKey",
-        in: "cookie",
-        name: "wrs_session",
-        description: "Signed HTTP-only session cookie returned by POST /api/auth/login.",
-      },
+securitySchemes: {
+  bearerAuth: {
+    type: "http",
+    scheme: "bearer",
+    bearerFormat: "API Key",
+    description: "Enter your custom access token"
+  }
     },
     schemas: {
       ErrorResponse: {

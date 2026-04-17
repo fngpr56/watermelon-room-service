@@ -5,21 +5,20 @@ import { Router } from "express";
 
 import {
   createRequestRecord,
-  getRequestCatalog,
   getRequests,
-  removeRequestRecord,
+  removeRequest,
   updateRequestRecord,
 } from "../controllers/requests.controller.js";
+
 import { requireApiRole } from "../middleware/auth.js";
 
 const router = Router();
 
-router.use(requireApiRole("guest"));
+router.use(requireApiRole("staff"));
 
-router.get("/catalog", getRequestCatalog);
 router.get("/", getRequests);
 router.post("/", createRequestRecord);
 router.put("/:requestId", updateRequestRecord);
-router.delete("/:requestId", removeRequestRecord);
+router.delete("/:requestId", removeRequest);
 
 export default router;
