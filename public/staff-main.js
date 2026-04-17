@@ -1,4 +1,4 @@
-import { initializeDashboard } from "/page-main.js";
+import { connectSessionSocket, fetchWithSession, initializeDashboard } from "/page-main.js";
 
 const session = await initializeDashboard({
   expectedUserType: "staff",
@@ -21,6 +21,7 @@ const staffCountNode = document.querySelector("#staff-count");
 const staffTableBody = document.querySelector("#staff-table-body");
 const idField = document.querySelector("#staff-id");
 const passwordField = document.querySelector("#password");
+const togglePasswordButton = document.querySelector("#staff-toggle-password-button");
 
 const roomForm = document.querySelector("#room-form");
 const roomFormTitle = document.querySelector("#room-form-title");
@@ -49,6 +50,7 @@ let conversations = [];
 let activeConversationId = null;
 let currentConversation = null;
 let conversationPollHandle = null;
+let conversationSocket = null;
 
 function setStatus(node, message, tone = "") {
   node.textContent = message;
@@ -67,12 +69,24 @@ function formatCompactDateTime(value) {
   return value ? value.replace("T", " ").slice(0, 16) : "-";
 }
 
+function resetStaffPasswordVisibility() {
+  passwordField.type = "password";
+
+  if (!togglePasswordButton) {
+    return;
+  }
+
+  togglePasswordButton.textContent = "Show";
+  togglePasswordButton.setAttribute("aria-label", "Show password");
+}
+
 function resetStaffForm() {
   form.reset();
   idField.value = "";
   submitButton.textContent = "Create staff user";
   formTitle.textContent = "Create staff user";
   passwordField.required = true;
+  resetStaffPasswordVisibility();
   setStatus(staffStatusNode, "");
 }
 
@@ -99,6 +113,7 @@ function populateStaffForm(staffUser) {
   submitButton.textContent = "Update staff user";
   formTitle.textContent = `Edit ${staffUser.firstName} ${staffUser.lastName}`;
   passwordField.required = false;
+  resetStaffPasswordVisibility();
   setStatus(staffStatusNode, "Editing staff user. Leave password blank to keep the current password.", "ok");
 }
 
@@ -368,8 +383,7 @@ function updateConversationComposerState() {
 }
 
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
-    credentials: "same-origin",
+  const response = await fetchWithSession(url, {
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
@@ -490,6 +504,22 @@ async function refreshConversationState() {
   }
 }
 
+async function handleRealtimeConversationUpdate(payload) {
+  const updatedConversationId = Number(payload?.conversation?.id || 0);
+  const hadActiveConversation = Boolean(activeConversationId);
+
+  await loadConversations();
+
+  if (!hadActiveConversation && updatedConversationId > 0) {
+    activeConversationId = updatedConversationId;
+    renderConversationList();
+  }
+
+  if (updatedConversationId > 0 && Number(activeConversationId) === updatedConversationId) {
+    renderConversationThread(payload);
+  }
+}
+
 function startConversationPolling() {
   if (conversationPollHandle) {
     window.clearInterval(conversationPollHandle);
@@ -500,6 +530,19 @@ function startConversationPolling() {
       // Keep the current UI visible on transient polling errors.
     });
   }, 8000);
+}
+
+async function startRealtimeConversationUpdates() {
+  try {
+    conversationSocket = await connectSessionSocket();
+    conversationSocket.on("conversation:updated", (payload) => {
+      handleRealtimeConversationUpdate(payload).catch(() => {
+        // Polling remains as a fallback path if realtime refresh work fails.
+      });
+    });
+  } catch {
+    // Polling remains active if the realtime channel cannot connect.
+  }
 }
 
 async function deleteStaffUser(staffUser) {
@@ -652,6 +695,14 @@ conversationForm.addEventListener("submit", async (event) => {
   }
 });
 
+togglePasswordButton?.addEventListener("click", () => {
+  const isHidden = passwordField.type === "password";
+
+  passwordField.type = isHidden ? "text" : "password";
+  togglePasswordButton.textContent = isHidden ? "Hide" : "Show";
+  togglePasswordButton.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+});
+
 resetButton.addEventListener("click", () => {
   resetStaffForm();
 });
@@ -680,10 +731,15 @@ if (session?.staffId) {
   }
 
   startConversationPolling();
+  await startRealtimeConversationUpdates();
 }
 
 window.addEventListener("beforeunload", () => {
   if (conversationPollHandle) {
     window.clearInterval(conversationPollHandle);
+  }
+
+  if (conversationSocket) {
+    conversationSocket.disconnect();
   }
 });

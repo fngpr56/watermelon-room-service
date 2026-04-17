@@ -2,7 +2,7 @@ import { env } from "../config/env.js";
 import { getSession } from "../middleware/auth.js";
 import { authenticateUser } from "../services/auth.service.js";
 import { ApiError } from "../utils/apiError.js";
-import { clearSessionCookie, createSession, serializeSessionCookie } from "../utils/session.js";
+import { clearSessionCookie, createSession, serializeSessionToken } from "../utils/session.js";
 
 function isSecureCookieEnabled(req) {
   return env.nodeEnv === "production" && req.secure;
@@ -22,14 +22,14 @@ export async function login(req, res, next) {
     }
 
     const session = createSession(result.session);
-    res.setHeader(
-      "Set-Cookie",
-      serializeSessionCookie(session, env.sessionSecret, isSecureCookieEnabled(req))
-    );
+    const sessionToken = serializeSessionToken(session, env.sessionSecret);
+
+    res.setHeader("Set-Cookie", clearSessionCookie(isSecureCookieEnabled(req)));
 
     res.json({
       redirectTo: result.redirectTo,
       userType: result.session.userType,
+      sessionToken,
     });
   } catch (error) {
     next(error);

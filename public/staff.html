@@ -45,7 +45,12 @@
 
                 <label class="label" for="password">
                   Password
-                  <input id="password" name="password" type="password" minlength="6" autocomplete="new-password" />
+                  <div class="password-field-row">
+                    <input id="password" name="password" type="password" minlength="6" autocomplete="new-password" />
+                    <button class="secondary password-toggle" type="button" id="staff-toggle-password-button" aria-label="Show password">
+                      Show
+                    </button>
+                  </div>
                 </label>
 
                 <label class="label" for="role">

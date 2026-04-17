@@ -8,6 +8,7 @@ import {
   getStaffConversation,
   listStaffConversations,
 } from "../services/conversations.service.js";
+import { emitConversationUpdated } from "../sockets/index.js";
 
 const messageSchema = z.object({
   message: z.string().trim().min(1).max(2000),
@@ -61,6 +62,7 @@ export async function createGuestMessage(req, res, next) {
   try {
     const payload = messageSchema.parse(normalizePayload(req.body));
     const item = await createGuestConversationMessage(req.session.roomId, payload.message);
+    emitConversationUpdated(item);
     res.status(201).json(item);
   } catch (error) {
     next(error.name === "ZodError" ? new ApiError(400, "Invalid message payload") : error);
@@ -72,6 +74,7 @@ export async function createStaffMessage(req, res, next) {
     const conversationId = parseConversationId(req.params.conversationId);
     const payload = messageSchema.parse(normalizePayload(req.body));
     const item = await createStaffConversationMessage(conversationId, req.session, payload.message);
+    emitConversationUpdated(item);
     res.status(201).json(item);
   } catch (error) {
     next(error.name === "ZodError" ? new ApiError(400, "Invalid message payload") : error);
