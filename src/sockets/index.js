@@ -2,6 +2,7 @@ import { env } from "../config/env.js";
 import { readSessionFromToken } from "../utils/session.js";
 
 const STAFF_CONVERSATIONS_ROOM = "staff:conversations";
+const HOUSEKEEPING_INVENTORY_ROOM = "staff:housekeeping:inventory";
 let ioInstance = null;
 
 function getGuestConversationsRoom(roomId) {
@@ -40,6 +41,10 @@ export function registerSocketHandlers(io) {
 
     if (session?.userType === "staff") {
       socket.join(STAFF_CONVERSATIONS_ROOM);
+
+      if (session.role === "housekeeping") {
+        socket.join(HOUSEKEEPING_INVENTORY_ROOM);
+      }
     }
   });
 }
@@ -56,4 +61,15 @@ export function emitConversationUpdated(payload) {
   if (roomId > 0) {
     ioInstance.to(getGuestConversationsRoom(roomId)).emit("conversation:updated", payload);
   }
+}
+
+export function emitInventoryUpdated(payload = {}) {
+  if (!ioInstance) {
+    return;
+  }
+
+  ioInstance.to(HOUSEKEEPING_INVENTORY_ROOM).emit("inventory:updated", {
+    updatedAt: new Date().toISOString(),
+    ...payload,
+  });
 }
