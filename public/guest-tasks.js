@@ -1,146 +1,52 @@
+console.log("guest-tasks.js loaded");
 import { initializeDashboard } from "/page-main.js";
 
 await initializeDashboard({
   expectedUserType: "guest",
-  resolveTitle() {
-    return "Guest Tasks";
+  resolveTitle(session) {
+    return `Room B ${session.roomNumber}`;
   },
-  metaEntries(session) {
-    return [
-      { label: "Room", value: `#${session.roomNumber}` },
-      { label: "Guest", value: session.displayName },
-      { label: "Workspace", value: "Requests" },
-    ];
+  metaEntries() {
+    return [];
   },
 });
 
-const form = document.querySelector("#request-form");
-const formTitle = document.querySelector("#request-form-title");
-const requestIdField = document.querySelector("#request-id");
-const statusSelect = document.querySelector("#statusId");
-const submitButton = document.querySelector("#submit-request-button");
-const resetButton = document.querySelector("#reset-request-button");
-const statusNode = document.querySelector("#request-status");
-const countNode = document.querySelector("#request-count");
-const tableBody = document.querySelector("#request-table-body");
+const listNode = document.querySelector("#request-list");
+
+const detailTitle = document.querySelector("#detail-title");
+const detailStatus = document.querySelector("#detail-status");
+const detailEta = document.querySelector("#detail-eta");
+const detailNotes = document.querySelector("#detail-notes");
+
+const taskOverlay = document.querySelector("#task-overlay");
+const closeOverlayButton = document.querySelector("#close-overlay-button");
+
+const mobileDetailTitle = document.querySelector("#mobile-detail-title");
+const mobileDetailStatus = document.querySelector("#mobile-detail-status");
+const mobileDetailEta = document.querySelector("#mobile-detail-eta");
+const mobileDetailNotes = document.querySelector("#mobile-detail-notes");
+
+const sendButton = document.querySelector("#send-button");
+const messageInput = document.querySelector("#message-input");
+const mobileSendButton = document.querySelector("#mobile-send-button");
+const mobileMessageInput = document.querySelector("#mobile-message-input");
 
 let requests = [];
-let statuses = [];
+let activeRequestId = null;
 
-function setStatus(message, tone = "") {
-  statusNode.textContent = message;
-  statusNode.className = `status ${tone}`.trim();
+function isMobileView() {
+  return window.matchMedia("(max-width: 820px)").matches;
 }
 
-function formatDateTime(value) {
-  return value ? value.replace("T", " ") : "-";
-}
-
-function escapeEmpty(value) {
-  return value || "-";
-}
-
-function getDefaultStatusId() {
-  const received = statuses.find((item) => item.code === "received");
-  return String(received?.id || statuses[0]?.id || "");
-}
-
-function renderStatusOptions(selectedId = getDefaultStatusId()) {
-  statusSelect.innerHTML = "";
-
-  for (const status of statuses) {
-    const option = document.createElement("option");
-    option.value = String(status.id);
-    option.textContent = status.label;
-    statusSelect.append(option);
+function openOverlay() {
+  if (taskOverlay) {
+    taskOverlay.hidden = false;
   }
-
-  statusSelect.value = String(selectedId || getDefaultStatusId());
 }
 
-function resetForm() {
-  form.reset();
-  requestIdField.value = "";
-  formTitle.textContent = "Create request";
-  submitButton.textContent = "Create request";
-
-  if (statuses.length > 0) {
-    renderStatusOptions();
-  }
-
-  setStatus("");
-}
-
-function populateForm(item) {
-  requestIdField.value = item.id;
-  form.fullRequest.value = item.fullRequest;
-  form.category.value = item.category || "";
-  form.statusId.value = String(item.status.id);
-  form.etaMinutes.value = item.etaMinutes ?? "";
-  form.notes.value = item.notes || "";
-  formTitle.textContent = "Edit request";
-  submitButton.textContent = "Update request";
-  setStatus("Editing request record.", "ok");
-}
-
-function createActionButton(label, className, onClick) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = className;
-  button.textContent = label;
-  button.addEventListener("click", onClick);
-  return button;
-}
-
-function renderTable() {
-  tableBody.innerHTML = "";
-
-  if (requests.length === 0) {
-    const row = document.createElement("tr");
-    const cell = document.createElement("td");
-    cell.colSpan = 6;
-    cell.className = "empty-state";
-    cell.textContent = "No requests yet.";
-    row.append(cell);
-    tableBody.append(row);
-    countNode.textContent = "0 requests";
-    return;
-  }
-
-  countNode.textContent = `${requests.length} request${requests.length === 1 ? "" : "s"}`;
-
-  for (const item of requests) {
-    const row = document.createElement("tr");
-
-    const requestedCell = document.createElement("td");
-    requestedCell.textContent = formatDateTime(item.requestDate);
-    row.append(requestedCell);
-
-    const categoryCell = document.createElement("td");
-    categoryCell.textContent = escapeEmpty(item.category);
-    row.append(categoryCell);
-
-    const statusCell = document.createElement("td");
-    statusCell.textContent = item.status.label;
-    row.append(statusCell);
-
-    const etaCell = document.createElement("td");
-    etaCell.textContent = item.etaMinutes === null ? "-" : `${item.etaMinutes} min`;
-    row.append(etaCell);
-
-    const notesCell = document.createElement("td");
-    notesCell.textContent = escapeEmpty(item.notes);
-    row.append(notesCell);
-
-    const actionsCell = document.createElement("td");
-    actionsCell.className = "table-actions";
-    actionsCell.append(
-      createActionButton("Edit", "secondary table-button", () => populateForm(item)),
-      createActionButton("Delete", "danger table-button", () => deleteRequest(item))
-    );
-    row.append(actionsCell);
-
-    tableBody.append(row);
+function closeOverlay() {
+  if (taskOverlay) {
+    taskOverlay.hidden = true;
   }
 }
 
@@ -163,98 +69,155 @@ async function requestJson(url, options = {}) {
   return payload;
 }
 
-async function loadStatuses() {
-  const payload = await requestJson("/api/statuses");
-  statuses = payload.items || [];
+function formatMinutes(value) {
+  if (value === null || value === undefined || value === "") {
+    return "—";
+  }
 
-  if (statuses.length === 0) {
-    submitButton.disabled = true;
-    setStatus("No request statuses are available. Import the schema seed data first.", "error");
+  return `${value} min`;
+}
+
+function statusClass(label = "") {
+  const value = String(label).toLowerCase();
+
+  if (value.includes("received")) return "status-received";
+  if (value.includes("progress")) return "status-in-progress";
+  if (value.includes("delivered")) return "status-delivered";
+
+  return "status-received";
+}
+
+function truncateText(value, maxLength = 24) {
+  const text = String(value || "").trim();
+
+  if (!text) {
+    return "Request";
+  }
+
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  return `${text.slice(0, maxLength).trim()}...`;
+}
+
+function setDetail(item) {
+  const title = item ? item.fullRequest || "Request" : "Select a request";
+  const statusText = item ? item.status?.label || "—" : "—";
+  const statusClassName = item ? `status-pill ${statusClass(item.status?.label)}` : "status-pill";
+  const etaText = item ? formatMinutes(item.etaMinutes) : "—";
+  const notesText = item ? item.notes || "No notes." : "Choose a request on the left to view full details.";
+
+  if (detailTitle) detailTitle.textContent = title;
+  if (detailStatus) {
+    detailStatus.textContent = statusText;
+    detailStatus.className = statusClassName;
+  }
+  if (detailEta) detailEta.textContent = etaText;
+  if (detailNotes) detailNotes.textContent = notesText;
+
+  if (mobileDetailTitle) mobileDetailTitle.textContent = title;
+  if (mobileDetailStatus) {
+    mobileDetailStatus.textContent = statusText;
+    mobileDetailStatus.className = statusClassName;
+  }
+  if (mobileDetailEta) mobileDetailEta.textContent = etaText;
+  if (mobileDetailNotes) mobileDetailNotes.textContent = notesText;
+}
+
+function renderList() {
+  if (!listNode) {
     return;
   }
 
-  submitButton.disabled = false;
-  renderStatusOptions();
+  listNode.innerHTML = "";
+
+  if (!requests.length) {
+    listNode.innerHTML = `<div class="empty-list">No requests yet.</div>`;
+    setDetail(null);
+    return;
+  }
+
+  for (const item of requests) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "request-item";
+
+    if (String(item.id) === String(activeRequestId)) {
+      button.classList.add("active");
+    }
+
+    button.innerHTML = `
+      <p class="request-title">${truncateText(item.fullRequest)}</p>
+      <div class="request-meta">
+        <span class="status-pill ${statusClass(item.status?.label)}">${item.status?.label || "—"}</span>
+        <span class="request-time">${formatMinutes(item.etaMinutes)}</span>
+      </div>
+    `;
+
+    button.addEventListener("click", () => {
+      activeRequestId = item.id;
+      renderList();
+      setDetail(item);
+
+      if (isMobileView()) {
+        openOverlay();
+      }
+    });
+
+    listNode.append(button);
+  }
 }
 
 async function loadRequests() {
   const payload = await requestJson("/api/requests");
   requests = payload.items || [];
-  renderTable();
+  activeRequestId = requests[0]?.id || null;
+  renderList();
+  setDetail(requests[0] || null);
 }
 
-function getPayload() {
-  const formData = new FormData(form);
-  const rawEta = String(formData.get("etaMinutes") || "").trim();
-
-  return {
-    fullRequest: String(formData.get("fullRequest") || "").trim(),
-    category: String(formData.get("category") || "").trim() || null,
-    statusId: Number(formData.get("statusId") || 0),
-    etaMinutes: rawEta ? Number(rawEta) : null,
-    notes: String(formData.get("notes") || "").trim() || null,
-  };
-}
-
-async function deleteRequest(item) {
-  const confirmed = window.confirm("Delete this request?");
-
-  if (!confirmed) {
-    return;
+function clearMessageInputs() {
+  if (messageInput) {
+    messageInput.value = "";
   }
 
-  try {
-    await requestJson(`/api/requests/${item.id}`, {
-      method: "DELETE",
-    });
-
-    if (requestIdField.value === item.id) {
-      resetForm();
-    }
-
-    setStatus("Request deleted.", "ok");
-    await loadRequests();
-  } catch (error) {
-    setStatus(error.message, "error");
+  if (mobileMessageInput) {
+    mobileMessageInput.value = "";
   }
 }
 
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  const requestId = requestIdField.value;
-  const isEditing = Boolean(requestId);
-  const payload = getPayload();
-
-  submitButton.disabled = true;
-  setStatus(isEditing ? "Updating request..." : "Creating request...", "ok");
-
-  try {
-    await requestJson(isEditing ? `/api/requests/${requestId}` : "/api/requests", {
-      method: isEditing ? "PUT" : "POST",
-      body: JSON.stringify(payload),
-    });
-    setStatus(isEditing ? "Request updated." : "Request created.", "ok");
-    resetForm();
-    await loadRequests();
-  } catch (error) {
-    setStatus(error.message, "error");
-  } finally {
-    submitButton.disabled = false;
-  }
-});
-
-resetButton.addEventListener("click", () => {
-  resetForm();
-});
-
-document.querySelector("#back-home-button")?.addEventListener("click", () => {
-  window.location.assign("/guest");
+document.getElementById("back-home-button")?.addEventListener("click", () => {
+  location.href = "/guest";
 });
 
 document.querySelector("#open-help-button")?.addEventListener("click", () => {
   window.location.assign("/guest/help");
 });
 
-await Promise.all([loadStatuses(), loadRequests()]);
-resetForm();
+closeOverlayButton?.addEventListener("click", () => {
+  closeOverlay();
+});
+
+taskOverlay?.addEventListener("click", (event) => {
+  if (event.target === taskOverlay) {
+    closeOverlay();
+  }
+});
+
+sendButton?.addEventListener("click", () => {
+  clearMessageInputs();
+});
+
+mobileSendButton?.addEventListener("click", () => {
+  clearMessageInputs();
+});
+
+window.addEventListener("resize", () => {
+  if (!isMobileView()) {
+    closeOverlay();
+  }
+});
+
+await loadRequests();
+closeOverlay();
