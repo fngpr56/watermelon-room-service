@@ -32,8 +32,23 @@ const roomTableBody = document.querySelector("#room-table-body");
 const roomIdField = document.querySelector("#room-id");
 const roomPasswordField = document.querySelector("#roomPassword");
 
+const conversationListNode = document.querySelector("#conversation-list");
+const conversationCountNode = document.querySelector("#conversation-count");
+const conversationTitleNode = document.querySelector("#conversation-title");
+const conversationSubtitleNode = document.querySelector("#conversation-subtitle");
+const conversationThreadNode = document.querySelector("#conversation-thread");
+const conversationForm = document.querySelector("#conversation-form");
+const conversationMessageField = document.querySelector("#conversation-message");
+const conversationSubmitButton = document.querySelector("#conversation-submit-button");
+const conversationRefreshButton = document.querySelector("#conversation-refresh-button");
+const conversationStatusNode = document.querySelector("#conversation-status");
+
 let staffUsers = [];
 let rooms = [];
+let conversations = [];
+let activeConversationId = null;
+let currentConversation = null;
+let conversationPollHandle = null;
 
 function setStatus(node, message, tone = "") {
   node.textContent = message;
@@ -46,6 +61,10 @@ function escapeEmpty(value) {
 
 function formatDateTime(value) {
   return value ? value.replace("T", " ") : "-";
+}
+
+function formatCompactDateTime(value) {
+  return value ? value.replace("T", " ").slice(0, 16) : "-";
 }
 
 function resetStaffForm() {
@@ -102,9 +121,11 @@ function createActionButton(label, className, onClick, options = {}) {
   button.className = className;
   button.textContent = label;
   button.disabled = Boolean(options.disabled);
+
   if (options.title) {
     button.title = options.title;
   }
+
   button.addEventListener("click", onClick);
   return button;
 }
@@ -216,6 +237,136 @@ function renderRoomTable() {
   }
 }
 
+function renderConversationList() {
+  conversationListNode.innerHTML = "";
+
+  if (conversations.length === 0) {
+    const emptyState = document.createElement("div");
+    emptyState.className = "tile empty-list-state";
+    emptyState.textContent = "No guest conversations yet.";
+    conversationListNode.append(emptyState);
+    conversationCountNode.textContent = "0 conversations";
+    return;
+  }
+
+  conversationCountNode.textContent = `${conversations.length} conversation${conversations.length === 1 ? "" : "s"}`;
+
+  for (const conversation of conversations) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `conversation-item ${activeConversationId === conversation.id ? "active" : ""}`.trim();
+    button.addEventListener("click", () => {
+      loadConversationDetails(conversation.id);
+    });
+
+    const header = document.createElement("div");
+    header.className = "conversation-item-header";
+
+    const title = document.createElement("strong");
+    title.textContent = conversation.roomDisplayName;
+    header.append(title);
+
+    const roomLabel = document.createElement("span");
+    roomLabel.className = "conversation-item-tag";
+    roomLabel.textContent = `Room ${conversation.roomNumber}`;
+    header.append(roomLabel);
+
+    const preview = document.createElement("p");
+    preview.className = "conversation-preview";
+    preview.textContent = conversation.lastMessagePreview || "No messages yet.";
+
+    const meta = document.createElement("div");
+    meta.className = "conversation-item-meta";
+    meta.textContent = [
+      conversation.assignedStaffName ? `Assigned: ${conversation.assignedStaffName}` : "Unassigned",
+      `${conversation.messageCount} message${conversation.messageCount === 1 ? "" : "s"}`,
+      formatCompactDateTime(conversation.lastMessageAt),
+    ].join(" • ");
+
+    button.append(header, preview, meta);
+    conversationListNode.append(button);
+  }
+}
+
+function renderConversationThread(payload) {
+  conversationThreadNode.innerHTML = "";
+  currentConversation = payload?.conversation || null;
+
+  if (!currentConversation) {
+    conversationTitleNode.textContent = "Select a conversation";
+    conversationSubtitleNode.textContent = "Choose a guest help thread from the list to read messages.";
+    const emptyState = document.createElement("div");
+    emptyState.className = "empty-thread-message";
+    emptyState.textContent = "No conversation selected.";
+    conversationThreadNode.append(emptyState);
+    updateConversationComposerState();
+    return;
+  }
+
+  conversationTitleNode.textContent = `${currentConversation.roomDisplayName} conversation`;
+  conversationSubtitleNode.textContent = currentConversation.assignedStaffName
+    ? `Assigned to ${currentConversation.assignedStaffName}. Only front desk staff can reply.`
+    : "Unassigned conversation. Only front desk staff can reply.";
+
+  const messages = payload.messages || [];
+
+  if (messages.length === 0) {
+    const emptyState = document.createElement("div");
+    emptyState.className = "empty-thread-message";
+    emptyState.textContent = "No messages yet.";
+    conversationThreadNode.append(emptyState);
+    updateConversationComposerState();
+    return;
+  }
+
+  for (const message of messages) {
+    const article = document.createElement("article");
+    const isMine = message.senderType === "staff" && Number(message.staffId) === Number(session.staffId);
+    article.className = `message-bubble ${isMine ? "mine" : "other"} ${message.senderType}`;
+
+    const meta = document.createElement("div");
+    meta.className = "message-meta";
+
+    const sender = document.createElement("strong");
+    sender.textContent = message.senderName;
+    meta.append(sender);
+
+    const timestamp = document.createElement("span");
+    timestamp.textContent = formatDateTime(message.createdAt);
+    meta.append(timestamp);
+
+    const body = document.createElement("p");
+    body.className = "message-body";
+    body.textContent = message.message;
+
+    article.append(meta, body);
+    conversationThreadNode.append(article);
+  }
+
+  conversationThreadNode.scrollTop = conversationThreadNode.scrollHeight;
+  updateConversationComposerState();
+}
+
+function updateConversationComposerState() {
+  const hasConversation = Boolean(currentConversation?.id);
+  const canReply = hasConversation && session.role === "front_desk";
+
+  conversationMessageField.disabled = !canReply;
+  conversationSubmitButton.disabled = !canReply;
+
+  if (!hasConversation) {
+    setStatus(conversationStatusNode, "Select a conversation to reply.");
+    return;
+  }
+
+  if (session.role !== "front_desk") {
+    setStatus(conversationStatusNode, "Only staff with the front_desk role can answer guest questions.", "error");
+    return;
+  }
+
+  setStatus(conversationStatusNode, "");
+}
+
 async function requestJson(url, options = {}) {
   const response = await fetch(url, {
     credentials: "same-origin",
@@ -305,6 +456,52 @@ async function loadRooms() {
   renderRoomTable();
 }
 
+async function loadConversations() {
+  const payload = await requestJson("/api/conversations");
+  conversations = payload.items || [];
+  renderConversationList();
+
+  if (!conversations.some((item) => item.id === activeConversationId)) {
+    activeConversationId = conversations[0]?.id || null;
+  }
+
+  if (!activeConversationId) {
+    renderConversationThread(null);
+  }
+}
+
+async function loadConversationDetails(conversationId) {
+  activeConversationId = conversationId;
+  renderConversationList();
+
+  try {
+    const payload = await requestJson(`/api/conversations/${conversationId}`);
+    renderConversationThread(payload);
+  } catch (error) {
+    setStatus(conversationStatusNode, error.message, "error");
+  }
+}
+
+async function refreshConversationState() {
+  await loadConversations();
+
+  if (activeConversationId) {
+    await loadConversationDetails(activeConversationId);
+  }
+}
+
+function startConversationPolling() {
+  if (conversationPollHandle) {
+    window.clearInterval(conversationPollHandle);
+  }
+
+  conversationPollHandle = window.setInterval(() => {
+    refreshConversationState().catch(() => {
+      // Keep the current UI visible on transient polling errors.
+    });
+  }, 8000);
+}
+
 async function deleteStaffUser(staffUser) {
   if (Number(staffUser.id) === Number(session.staffId)) {
     setStatus(staffStatusNode, "You cannot delete your own active staff account.", "error");
@@ -322,9 +519,11 @@ async function deleteStaffUser(staffUser) {
       method: "DELETE",
     });
     setStatus(staffStatusNode, "Staff user deleted.", "ok");
+
     if (String(staffUser.id) === idField.value) {
       resetStaffForm();
     }
+
     await loadStaffUsers();
   } catch (error) {
     setStatus(staffStatusNode, error.message, "error");
@@ -343,9 +542,11 @@ async function deleteRoom(room) {
       method: "DELETE",
     });
     setStatus(roomStatusNode, "Room deleted.", "ok");
+
     if (String(room.id) === roomIdField.value) {
       resetRoomForm();
     }
+
     await loadRooms();
   } catch (error) {
     setStatus(roomStatusNode, error.message, "error");
@@ -412,6 +613,45 @@ roomForm.addEventListener("submit", async (event) => {
   }
 });
 
+conversationForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  if (!activeConversationId) {
+    setStatus(conversationStatusNode, "Select a conversation to reply.", "error");
+    return;
+  }
+
+  if (session.role !== "front_desk") {
+    setStatus(conversationStatusNode, "Only front desk staff can answer guest questions.", "error");
+    return;
+  }
+
+  const message = conversationMessageField.value.trim();
+
+  if (!message) {
+    setStatus(conversationStatusNode, "Reply cannot be empty.", "error");
+    return;
+  }
+
+  conversationSubmitButton.disabled = true;
+  setStatus(conversationStatusNode, "Sending reply...", "ok");
+
+  try {
+    const payload = await requestJson(`/api/conversations/${activeConversationId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ message }),
+    });
+    conversationMessageField.value = "";
+    renderConversationThread(payload);
+    await loadConversations();
+    setStatus(conversationStatusNode, "Reply sent.", "ok");
+  } catch (error) {
+    setStatus(conversationStatusNode, error.message, "error");
+  } finally {
+    updateConversationComposerState();
+  }
+});
+
 resetButton.addEventListener("click", () => {
   resetStaffForm();
 });
@@ -420,6 +660,30 @@ roomResetButton.addEventListener("click", () => {
   resetRoomForm();
 });
 
+conversationRefreshButton.addEventListener("click", async () => {
+  try {
+    setStatus(conversationStatusNode, "Refreshing conversations...", "ok");
+    await refreshConversationState();
+    setStatus(conversationStatusNode, "Conversation list refreshed.", "ok");
+  } catch (error) {
+    setStatus(conversationStatusNode, error.message, "error");
+  }
+});
+
 if (session?.staffId) {
-  await Promise.all([loadStaffUsers(), loadRooms()]);
+  await Promise.all([loadStaffUsers(), loadRooms(), loadConversations()]);
+
+  if (activeConversationId) {
+    await loadConversationDetails(activeConversationId);
+  } else {
+    renderConversationThread(null);
+  }
+
+  startConversationPolling();
 }
+
+window.addEventListener("beforeunload", () => {
+  if (conversationPollHandle) {
+    window.clearInterval(conversationPollHandle);
+  }
+});

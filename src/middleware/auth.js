@@ -43,3 +43,16 @@ export function requireApiRole(role) {
     next();
   };
 }
+
+export function requireApiAuth() {
+  return function authorize(req, res, next) {
+    const session = getSession(req);
+
+    if (!session) {
+      return rejectApiRequest(res, 401, "Not authenticated");
+    }
+
+    req.session = session;
+    next();
+  };
+}
