@@ -1,3 +1,6 @@
+/**
+ * Authentication and authorization middleware for page routes, APIs, and staff role checks.
+ */
 import { env } from "../config/env.js";
 import { readSessionFromRequest } from "../utils/session.js";
 

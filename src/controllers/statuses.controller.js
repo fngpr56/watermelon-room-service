@@ -1,3 +1,6 @@
+/**
+ * HTTP handlers for request status list and CRUD operations.
+ */
 import { z } from "zod";
 
 import {

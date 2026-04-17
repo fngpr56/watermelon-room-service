@@ -1,3 +1,6 @@
+/**
+ * Guest request business logic, including catalog matching and automatic inventory reservation.
+ */
 import { randomUUID } from "crypto";
 
 import { getPool } from "../config/db.js";

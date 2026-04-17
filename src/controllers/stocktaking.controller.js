@@ -1,3 +1,6 @@
+/**
+ * HTTP handlers for stocktaking entry list, create, update, and delete operations.
+ */
 import * as stocktakingService from "../services/stocktaking.service.js";
 
 export async function listStocktaking(req, res, next) {

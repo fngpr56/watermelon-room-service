@@ -1,3 +1,6 @@
+/**
+ * HTTP handlers for staff user CRUD, validation, and password-aware updates.
+ */
 import { z } from "zod";
 
 import { deleteStaffUser, listStaffUsers, createStaffUser, updateStaffUser } from "../services/staff.service.js";

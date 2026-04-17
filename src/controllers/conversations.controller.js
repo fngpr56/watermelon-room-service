@@ -1,3 +1,6 @@
+/**
+ * HTTP handlers for guest/staff conversation lists, threads, and message creation.
+ */
 import { z } from "zod";
 
 import { ApiError } from "../utils/apiError.js";

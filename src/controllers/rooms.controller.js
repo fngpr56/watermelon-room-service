@@ -1,3 +1,6 @@
+/**
+ * HTTP handlers for room CRUD used by the authenticated staff dashboard.
+ */
 import { z } from "zod";
 
 import { ApiError } from "../utils/apiError.js";

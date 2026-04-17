@@ -1,3 +1,6 @@
+/**
+ * Staff persistence helpers, including password hashing and CRUD-oriented data shaping.
+ */
 import bcrypt from "bcrypt";
 
 import { getPool } from "../config/db.js";

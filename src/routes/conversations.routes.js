@@ -1,3 +1,6 @@
+/**
+ * Express route definitions for guest and staff conversation endpoints.
+ */
 import { Router } from "express";
 
 import {

@@ -1,3 +1,6 @@
+/**
+ * Database operations for request status records.
+ */
 import { getPool } from "../config/db.js";
 import { ApiError } from "../utils/apiError.js";
 

@@ -1,3 +1,6 @@
+/**
+ * Shared MariaDB pool configuration and database connectivity helpers.
+ */
 import * as mariadb from "mariadb";
 import { env } from "./env.js";
 

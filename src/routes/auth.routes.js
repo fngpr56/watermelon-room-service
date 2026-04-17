@@ -1,3 +1,6 @@
+/**
+ * Express route definitions for authentication endpoints.
+ */
 import { Router } from "express";
 
 import { login, logout, me } from "../controllers/auth.controller.js";

@@ -1,3 +1,6 @@
+/**
+ * Staff-only route definitions for managing staff user records.
+ */
 import { Router } from "express";
 
 import { createStaff, getStaffUsers, removeStaff, updateStaff } from "../controllers/staff.controller.js";

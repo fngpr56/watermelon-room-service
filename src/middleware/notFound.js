@@ -1,3 +1,6 @@
+/**
+ * Fallback handler for unknown routes, returning JSON for APIs and redirecting browser requests.
+ */
 import { ApiError } from "../utils/apiError.js";
 
 /**

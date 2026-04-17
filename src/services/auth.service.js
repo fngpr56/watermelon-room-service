@@ -1,3 +1,6 @@
+/**
+ * Authentication logic for room-number and staff-email login flows.
+ */
 import bcrypt from "bcrypt";
 
 import { getPool } from "../config/db.js";

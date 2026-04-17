@@ -1,3 +1,6 @@
+/**
+ * Schema helper for auth-related tables and compatibility checks when validating database shape.
+ */
 import bcrypt from "bcrypt";
 
 import { getPool } from "../config/db.js";

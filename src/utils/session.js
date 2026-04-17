@@ -1,3 +1,6 @@
+/**
+ * Signed session token helpers for issuing, parsing, and validating per-tab auth state.
+ */
 import crypto from "crypto";
 
 export const SESSION_COOKIE_NAME = "wrs_session";

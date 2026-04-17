@@ -1,3 +1,6 @@
+/**
+ * Room persistence helpers, including password hashing and dashboard-friendly formatting.
+ */
 import bcrypt from "bcrypt";
 
 import { getPool } from "../config/db.js";

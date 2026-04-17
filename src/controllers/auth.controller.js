@@ -1,3 +1,6 @@
+/**
+ * HTTP handlers for login, logout, and returning the current authenticated session.
+ */
 import { env } from "../config/env.js";
 import { getSession } from "../middleware/auth.js";
 import { authenticateUser } from "../services/auth.service.js";

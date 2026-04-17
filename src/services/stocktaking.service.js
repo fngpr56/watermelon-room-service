@@ -1,3 +1,6 @@
+/**
+ * Database operations for stocktaking audit entries.
+ */
 import { getPool } from "../config/db.js";
 import { ApiError } from "../utils/apiError.js";
 

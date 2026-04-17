@@ -1,3 +1,6 @@
+/**
+ * Page responders that serve the login, guest, help, task, and staff HTML entry points.
+ */
 import path from "path";
 
 import { getSession } from "../middleware/auth.js";

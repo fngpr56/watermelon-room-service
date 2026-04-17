@@ -1,3 +1,6 @@
+/**
+ * HTTP handlers for guest request CRUD, catalog lookup, and inventory-aware request creation.
+ */
 import { z } from "zod";
 
 import { ApiError } from "../utils/apiError.js";

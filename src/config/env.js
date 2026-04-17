@@ -1,3 +1,6 @@
+/**
+ * Central environment loader used by the server, database, auth, and realtime layers.
+ */
 import dotenv from "dotenv";
 
 dotenv.config();

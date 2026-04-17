@@ -1,3 +1,6 @@
+/**
+ * Route definitions for reading and managing request status records.
+ */
 import { Router } from "express";
 
 import { getStatuses, createStatus, updateStatus, removeStatus } from "../controllers/statuses.controller.js";

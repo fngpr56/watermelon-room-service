@@ -1,3 +1,6 @@
+/**
+ * Route definitions for stocktaking entry CRUD operations.
+ */
 import { Router } from "express";
 import * as controller from "../controllers/stocktaking.controller.js";
 

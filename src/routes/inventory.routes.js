@@ -1,3 +1,6 @@
+/**
+ * Housekeeping-only inventory and room assignment route definitions.
+ */
 import { Router } from "express";
 
 import {

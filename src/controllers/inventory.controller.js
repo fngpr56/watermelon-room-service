@@ -1,3 +1,6 @@
+/**
+ * HTTP handlers for inventory item CRUD and room assignment operations.
+ */
 import { z } from "zod";
 import { ApiError } from "../utils/apiError.js";
 import { emitInventoryUpdated } from "../sockets/index.js";

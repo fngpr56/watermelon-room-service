@@ -1,3 +1,6 @@
+/**
+ * Socket.IO authentication and broadcast helpers for conversations and housekeeping updates.
+ */
 import { env } from "../config/env.js";
 import { readSessionFromToken } from "../utils/session.js";
 

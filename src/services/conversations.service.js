@@ -1,3 +1,6 @@
+/**
+ * Conversation persistence and permission rules for guest/staff messaging.
+ */
 import { getPool } from "../config/db.js";
 import { ApiError } from "../utils/apiError.js";
 

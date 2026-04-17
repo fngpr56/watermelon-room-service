@@ -1,3 +1,6 @@
+/**
+ * Inventory business logic for stock levels, room assignments, and audit transactions.
+ */
 import { getPool } from "../config/db.js";
 import { ApiError } from "../utils/apiError.js";
 

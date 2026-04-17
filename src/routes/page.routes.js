@@ -1,3 +1,6 @@
+/**
+ * Page route definitions that gate guest and staff dashboards behind session checks.
+ */
 import { Router } from "express";
 
 import {

@@ -1,3 +1,6 @@
+/**
+ * Guest-only request route definitions, including the inventory request catalog.
+ */
 import { Router } from "express";
 
 import {

@@ -1,3 +1,6 @@
+/**
+ * Staff-only room management route definitions.
+ */
 import { Router } from "express";
 
 import { createRoomRecord, getRooms, removeRoom, updateRoomRecord } from "../controllers/rooms.controller.js";
