@@ -5,7 +5,9 @@ import {
   createInventoryRecord,
   getInventory,
   getInventoryAssignments,
+  removeInventoryAssignmentRecord,
   removeInventory,
+  updateInventoryAssignmentRecord,
   updateInventoryRecord,
 } from "../controllers/inventory.controller.js";
 
@@ -19,6 +21,8 @@ router.get("/", getInventory);
 router.get("/assignments", getInventoryAssignments);
 router.post("/", createInventoryRecord);
 router.post("/assignments", createInventoryAssignmentRecord);
+router.put("/assignments/:assignmentId", updateInventoryAssignmentRecord);
+router.delete("/assignments/:assignmentId", removeInventoryAssignmentRecord);
 router.put("/:inventoryId", updateInventoryRecord);
 router.delete("/:inventoryId", removeInventory);
 

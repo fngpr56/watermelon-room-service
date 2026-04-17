@@ -1,12 +1,15 @@
 import { z } from "zod";
 import { ApiError } from "../utils/apiError.js";
+import { emitInventoryUpdated } from "../sockets/index.js";
 
 import {
   assignInventoryToRoom,
   createInventoryItem,
+  deleteInventoryAssignment,
   deleteInventoryItem,
   listInventoryAssignments,
   listInventoryItems,
+  updateInventoryAssignment,
   updateInventoryItem,
 } from "../services/inventory.service.js";
 
@@ -51,6 +54,16 @@ function parseInventoryId(value) {
 
   if (!Number.isInteger(id) || id <= 0) {
     throw new ApiError(400, "Invalid inventory item id");
+  }
+
+  return id;
+}
+
+function parseAssignmentId(value) {
+  const id = Number(value);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new ApiError(400, "Invalid inventory assignment id");
   }
 
   return id;
@@ -139,6 +152,7 @@ export async function createInventoryRecord(req, res, next) {
     const payload = createInventorySchema.parse(normalizePayload(req.body));
 
     const item = await createInventoryItem(payload);
+    emitInventoryUpdated({ inventoryItemId: item.id, changeType: "item-created" });
 
     res.status(201).json({ item });
   } catch (error) {
@@ -160,6 +174,7 @@ export async function updateInventoryRecord(req, res, next) {
     const payload = updateInventorySchema.parse(normalizePayload(req.body));
 
     const item = await updateInventoryItem(id, payload);
+    emitInventoryUpdated({ inventoryItemId: item.id, changeType: "item-updated" });
 
     res.json({ item });
   } catch (error) {
@@ -179,6 +194,7 @@ export async function removeInventory(req, res, next) {
     const id = parseInventoryId(req.params.inventoryId);
 
     await deleteInventoryItem(id);
+    emitInventoryUpdated({ inventoryItemId: id, changeType: "item-deleted" });
 
     res.status(204).send();
   } catch (error) {
@@ -190,6 +206,12 @@ export async function createInventoryAssignmentRecord(req, res, next) {
   try {
     const payload = inventoryAssignmentSchema.parse(normalizeAssignmentPayload(req.body));
     const item = await assignInventoryToRoom(payload, req.session);
+    emitInventoryUpdated({
+      inventoryItemId: item.inventoryItem.id,
+      roomId: item.room.id,
+      assignmentId: item.id,
+      changeType: "assignment-created",
+    });
     res.status(201).json({ item });
   } catch (error) {
     next(
@@ -197,5 +219,42 @@ export async function createInventoryAssignmentRecord(req, res, next) {
         ? new ApiError(400, "Invalid inventory assignment payload")
         : mapDbError(error)
     );
+  }
+}
+
+export async function updateInventoryAssignmentRecord(req, res, next) {
+  try {
+    const assignmentId = parseAssignmentId(req.params.assignmentId);
+    const payload = inventoryAssignmentSchema.parse(normalizeAssignmentPayload(req.body));
+    const item = await updateInventoryAssignment(assignmentId, payload, req.session);
+    emitInventoryUpdated({
+      inventoryItemId: item.inventoryItem.id,
+      roomId: item.room.id,
+      assignmentId: item.id,
+      changeType: "assignment-updated",
+    });
+    res.json({ item });
+  } catch (error) {
+    next(
+      error.name === "ZodError"
+        ? new ApiError(400, "Invalid inventory assignment payload")
+        : mapDbError(error)
+    );
+  }
+}
+
+export async function removeInventoryAssignmentRecord(req, res, next) {
+  try {
+    const assignmentId = parseAssignmentId(req.params.assignmentId);
+    const item = await deleteInventoryAssignment(assignmentId, req.session);
+    emitInventoryUpdated({
+      inventoryItemId: item.inventoryItem.id,
+      roomId: item.room.id,
+      assignmentId: item.id,
+      changeType: "assignment-deleted",
+    });
+    res.status(204).send();
+  } catch (error) {
+    next(mapDbError(error));
   }
 }

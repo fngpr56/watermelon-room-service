@@ -34,6 +34,7 @@ const roomCountNode = document.querySelector("#room-count");
 const roomTableBody = document.querySelector("#room-table-body");
 const roomIdField = document.querySelector("#room-id");
 const roomPasswordField = document.querySelector("#roomPassword");
+const roomTogglePasswordButton = document.querySelector("#room-toggle-password-button");
 
 const inventoryManagementSection = document.querySelector("#inventory-management-section");
 const inventoryForm = document.querySelector("#inventory-form");
@@ -53,6 +54,8 @@ const inventoryLowStockThresholdField = document.querySelector("#inventory-low-s
 
 const inventoryAssignmentSection = document.querySelector("#inventory-assignment-section");
 const inventoryAssignmentForm = document.querySelector("#inventory-assignment-form");
+const inventoryAssignmentFormTitle = document.querySelector("#assignment-form-title");
+const inventoryAssignmentIdField = document.querySelector("#assignment-id");
 const inventoryAssignmentItemField = document.querySelector("#assignment-inventory-item-id");
 const inventoryAssignmentRoomField = document.querySelector("#assignment-room-id");
 const inventoryAssignmentQuantityField = document.querySelector("#assignment-quantity");
@@ -82,6 +85,7 @@ let activeConversationId = null;
 let currentConversation = null;
 let conversationPollHandle = null;
 let conversationSocket = null;
+let inventoryRefreshHandle = null;
 
 if (inventoryManagementSection) {
   inventoryManagementSection.hidden = !isHousekeeping;
@@ -89,6 +93,11 @@ if (inventoryManagementSection) {
 
 if (inventoryAssignmentSection) {
   inventoryAssignmentSection.hidden = !isHousekeeping;
+}
+
+if (!isHousekeeping) {
+  inventoryManagementSection?.remove();
+  inventoryAssignmentSection?.remove();
 }
 
 function setStatus(node, message, tone = "") {
@@ -139,7 +148,19 @@ function resetRoomForm() {
   roomSubmitButton.textContent = "Create room";
   roomFormTitle.textContent = "Create room";
   roomPasswordField.required = true;
+  resetRoomPasswordVisibility();
   setStatus(roomStatusNode, "");
+}
+
+function resetRoomPasswordVisibility() {
+  roomPasswordField.type = "password";
+
+  if (!roomTogglePasswordButton) {
+    return;
+  }
+
+  roomTogglePasswordButton.textContent = "Show";
+  roomTogglePasswordButton.setAttribute("aria-label", "Show room password");
 }
 
 function resetInventoryForm() {
@@ -155,6 +176,9 @@ function resetInventoryForm() {
 
 function resetInventoryAssignmentForm() {
   inventoryAssignmentForm.reset();
+  inventoryAssignmentIdField.value = "";
+  inventoryAssignmentFormTitle.textContent = "Assign inventory to room";
+  inventoryAssignmentSubmitButton.textContent = "Give inventory";
   inventoryAssignmentQuantityField.value = "1";
   renderInventoryItemOptions();
   renderRoomOptions();
@@ -189,6 +213,7 @@ function populateRoomForm(room) {
   roomSubmitButton.textContent = "Update room";
   roomFormTitle.textContent = `Edit room ${room.roomNumber}`;
   roomPasswordField.required = false;
+  resetRoomPasswordVisibility();
   setStatus(roomStatusNode, "Editing room. Leave password blank to keep the current password.", "ok");
 }
 
@@ -203,6 +228,17 @@ function populateInventoryForm(item) {
   inventoryFormTitle.textContent = `Edit ${item.name}`;
   inventorySubmitButton.textContent = "Update inventory item";
   setStatus(inventoryStatusNode, "Editing inventory item.", "ok");
+}
+
+function populateInventoryAssignmentForm(assignment) {
+  inventoryAssignmentIdField.value = String(assignment.id);
+  renderRoomOptions(String(assignment.room.id));
+  renderInventoryItemOptions(String(assignment.inventoryItem.id));
+  inventoryAssignmentQuantityField.value = String(assignment.quantity);
+  inventoryAssignmentForm.notes.value = assignment.notes || "";
+  inventoryAssignmentFormTitle.textContent = `Edit assignment for room ${assignment.room.roomNumber}`;
+  inventoryAssignmentSubmitButton.textContent = "Update assignment";
+  setStatus(inventoryAssignmentStatusNode, "Editing inventory assignment.", "ok");
 }
 
 function createActionButton(label, className, onClick, options = {}) {
@@ -427,7 +463,7 @@ function renderInventoryAssignmentTable() {
   if (inventoryAssignments.length === 0) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
-    cell.colSpan = 6;
+    cell.colSpan = 7;
     cell.className = "empty-state";
     cell.textContent = "No inventory assignments yet.";
     row.append(cell);
@@ -464,6 +500,14 @@ function renderInventoryAssignmentTable() {
     const notesCell = document.createElement("td");
     notesCell.textContent = escapeEmpty(assignment.notes);
     row.append(notesCell);
+
+    const actionsCell = document.createElement("td");
+    actionsCell.className = "table-actions table-actions-vertical";
+    actionsCell.append(
+      createActionButton("Edit", "secondary table-button", () => populateInventoryAssignmentForm(assignment)),
+      createActionButton("Delete", "danger table-button", () => deleteInventoryAssignmentRecord(assignment))
+    );
+    row.append(actionsCell);
 
     inventoryAssignmentTableBody.append(row);
   }
@@ -716,6 +760,10 @@ async function loadRooms() {
 }
 
 async function loadInventoryItems() {
+  if (!isHousekeeping) {
+    return;
+  }
+
   const payload = await requestJson("/api/inventory");
   inventoryItems = payload.items || [];
   renderInventoryTable();
@@ -723,9 +771,38 @@ async function loadInventoryItems() {
 }
 
 async function loadInventoryAssignments() {
+  if (!isHousekeeping) {
+    return;
+  }
+
   const payload = await requestJson("/api/inventory/assignments");
   inventoryAssignments = payload.items || [];
   renderInventoryAssignmentTable();
+}
+
+async function refreshInventoryState() {
+  if (!isHousekeeping) {
+    return;
+  }
+
+  await Promise.all([loadInventoryItems(), loadInventoryAssignments()]);
+}
+
+function scheduleInventoryRefresh() {
+  if (!isHousekeeping) {
+    return;
+  }
+
+  if (inventoryRefreshHandle) {
+    window.clearTimeout(inventoryRefreshHandle);
+  }
+
+  inventoryRefreshHandle = window.setTimeout(() => {
+    inventoryRefreshHandle = null;
+    refreshInventoryState().catch(() => {
+      // Keep the current inventory UI visible on transient socket refresh failures.
+    });
+  }, 120);
 }
 
 async function loadConversations() {
@@ -798,6 +875,12 @@ async function startRealtimeConversationUpdates() {
         // Polling remains as a fallback path if realtime refresh work fails.
       });
     });
+
+    if (isHousekeeping) {
+      conversationSocket.on("inventory:updated", () => {
+        scheduleInventoryRefresh();
+      });
+    }
   } catch {
     // Polling remains active if the realtime channel cannot connect.
   }
@@ -874,6 +957,31 @@ async function deleteInventoryItemRecord(item) {
     await loadInventoryItems();
   } catch (error) {
     setStatus(inventoryStatusNode, error.message, "error");
+  }
+}
+
+async function deleteInventoryAssignmentRecord(assignment) {
+  const confirmed = window.confirm(
+    `Delete assignment of ${assignment.inventoryItem.name} for ${assignment.room.displayName}?`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await requestJson(`/api/inventory/assignments/${assignment.id}`, {
+      method: "DELETE",
+    });
+    setStatus(inventoryAssignmentStatusNode, "Inventory assignment deleted.", "ok");
+
+    if (String(assignment.id) === inventoryAssignmentIdField.value) {
+      resetInventoryAssignmentForm();
+    }
+
+    await Promise.all([loadInventoryItems(), loadInventoryAssignments()]);
+  } catch (error) {
+    setStatus(inventoryAssignmentStatusNode, error.message, "error");
   }
 }
 
@@ -965,17 +1073,27 @@ inventoryForm?.addEventListener("submit", async (event) => {
 inventoryAssignmentForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
 
+  const assignmentId = inventoryAssignmentIdField.value;
+  const isEditing = Boolean(assignmentId);
   const payload = getInventoryAssignmentPayload();
 
   inventoryAssignmentSubmitButton.disabled = true;
-  setStatus(inventoryAssignmentStatusNode, "Assigning inventory to room...", "ok");
+  setStatus(
+    inventoryAssignmentStatusNode,
+    isEditing ? "Updating inventory assignment..." : "Assigning inventory to room...",
+    "ok"
+  );
 
   try {
-    await requestJson("/api/inventory/assignments", {
-      method: "POST",
+    await requestJson(isEditing ? `/api/inventory/assignments/${assignmentId}` : "/api/inventory/assignments", {
+      method: isEditing ? "PUT" : "POST",
       body: JSON.stringify(payload),
     });
-    setStatus(inventoryAssignmentStatusNode, "Inventory assigned to room.", "ok");
+    setStatus(
+      inventoryAssignmentStatusNode,
+      isEditing ? "Inventory assignment updated." : "Inventory assigned to room.",
+      "ok"
+    );
     resetInventoryAssignmentForm();
     await Promise.all([loadInventoryItems(), loadInventoryAssignments()]);
   } catch (error) {
@@ -1040,6 +1158,14 @@ roomResetButton.addEventListener("click", () => {
   resetRoomForm();
 });
 
+roomTogglePasswordButton?.addEventListener("click", () => {
+  const isHidden = roomPasswordField.type === "password";
+
+  roomPasswordField.type = isHidden ? "text" : "password";
+  roomTogglePasswordButton.textContent = isHidden ? "Hide" : "Show";
+  roomTogglePasswordButton.setAttribute("aria-label", isHidden ? "Hide room password" : "Show room password");
+});
+
 inventoryResetButton?.addEventListener("click", () => {
   resetInventoryForm();
 });
@@ -1085,6 +1211,10 @@ if (session?.staffId) {
 window.addEventListener("beforeunload", () => {
   if (conversationPollHandle) {
     window.clearInterval(conversationPollHandle);
+  }
+
+  if (inventoryRefreshHandle) {
+    window.clearTimeout(inventoryRefreshHandle);
   }
 
   if (conversationSocket) {

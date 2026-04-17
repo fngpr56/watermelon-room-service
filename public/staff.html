@@ -141,7 +141,12 @@
 
                 <label class="label" for="roomPassword">
                   Password
-                  <input id="roomPassword" name="password" type="password" minlength="6" autocomplete="new-password" />
+                  <div class="password-field-row">
+                    <input id="roomPassword" name="password" type="password" minlength="6" autocomplete="new-password" />
+                    <button class="secondary password-toggle" type="button" id="room-toggle-password-button" aria-label="Show room password">
+                      Show
+                    </button>
+                  </div>
                 </label>
 
                 <label class="label form-span-2" for="owner">
@@ -277,11 +282,13 @@
         <section class="management-layout" id="inventory-assignment-section" hidden>
           <article class="tile manager-panel">
             <div class="section-heading">
-              <strong>Assign inventory to room</strong>
+              <strong id="assignment-form-title">Assign inventory to room</strong>
               <p class="muted">Giving inventory to a room immediately decreases the item stock count.</p>
             </div>
 
             <form id="inventory-assignment-form" class="manager-form">
+              <input id="assignment-id" name="assignmentId" type="hidden" />
+
               <div class="form-grid">
                 <label class="label" for="assignment-room-id">
                   Room
@@ -331,6 +338,7 @@
                     <th>Quantity</th>
                     <th>Staff</th>
                     <th>Notes</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="assignment-table-body"></tbody>
