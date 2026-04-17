@@ -14,11 +14,8 @@ import roomsRoutes from "./routes/rooms.routes.js";
 import inventoryRoutes from "./routes/inventory.routes.js";
 import statusesRoutes from "./routes/statuses.routes.js";
 import requestsRoutes from "./routes/requests.routes.js";
-<<<<<<< HEAD
 import conversationsRoutes from "./routes/conversations.routes.js";
-=======
 import stocktakingRoutes from "./routes/stocktaking.routes.js";
->>>>>>> feature/stocktaking_entries
 import { notFound } from "./middleware/notFound.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { logger } from "./utils/logger.js";
