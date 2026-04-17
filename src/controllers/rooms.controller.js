@@ -4,6 +4,7 @@
 import { z } from "zod";
 
 import { ApiError } from "../utils/apiError.js";
+import { emitReceptionistOverviewUpdated } from "../sockets/index.js";
 import { createRoom, deleteRoom, listRooms, updateRoom } from "../services/rooms.service.js";
 
 const baseRoomSchema = z.object({
@@ -62,6 +63,7 @@ export async function createRoomRecord(req, res, next) {
   try {
     const payload = createRoomSchema.parse(normalizePayload(req.body));
     const item = await createRoom(payload);
+    emitReceptionistOverviewUpdated({ changeType: "room-created", roomId: item.id });
     res.status(201).json({ item });
   } catch (error) {
     next(error.name === "ZodError" ? new ApiError(400, "Invalid room payload") : mapDbError(error));
@@ -73,6 +75,7 @@ export async function updateRoomRecord(req, res, next) {
     const roomId = parseRoomId(req.params.roomId);
     const payload = updateRoomSchema.parse(normalizePayload(req.body));
     const item = await updateRoom(roomId, payload);
+    emitReceptionistOverviewUpdated({ changeType: "room-updated", roomId: item.id });
     res.json({ item });
   } catch (error) {
     next(error.name === "ZodError" ? new ApiError(400, "Invalid room payload") : mapDbError(error));
@@ -83,6 +86,7 @@ export async function removeRoom(req, res, next) {
   try {
     const roomId = parseRoomId(req.params.roomId);
     await deleteRoom(roomId);
+    emitReceptionistOverviewUpdated({ changeType: "room-deleted", roomId });
     res.status(204).send();
   } catch (error) {
     next(error);

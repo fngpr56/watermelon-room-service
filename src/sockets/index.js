@@ -6,6 +6,7 @@ import { readSessionFromToken } from "../utils/session.js";
 
 const STAFF_CONVERSATIONS_ROOM = "staff:conversations";
 const HOUSEKEEPING_INVENTORY_ROOM = "staff:housekeeping:inventory";
+const RECEPTIONIST_OVERVIEW_ROOM = "staff:receptionist:overview";
 const RUNNER_REQUESTS_ROOM = "staff:runner:requests";
 let ioInstance = null;
 
@@ -50,6 +51,10 @@ export function registerSocketHandlers(io) {
         socket.join(HOUSEKEEPING_INVENTORY_ROOM);
       }
 
+      if (session.role === "receptionist") {
+        socket.join(RECEPTIONIST_OVERVIEW_ROOM);
+      }
+
       if (session.role === "runner") {
         socket.join(RUNNER_REQUESTS_ROOM);
       }
@@ -77,6 +82,17 @@ export function emitInventoryUpdated(payload = {}) {
   }
 
   ioInstance.to(HOUSEKEEPING_INVENTORY_ROOM).emit("inventory:updated", {
+    updatedAt: new Date().toISOString(),
+    ...payload,
+  });
+}
+
+export function emitReceptionistOverviewUpdated(payload = {}) {
+  if (!ioInstance) {
+    return;
+  }
+
+  ioInstance.to(RECEPTIONIST_OVERVIEW_ROOM).emit("receptionist:overview-updated", {
     updatedAt: new Date().toISOString(),
     ...payload,
   });

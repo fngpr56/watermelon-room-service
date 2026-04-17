@@ -2,7 +2,11 @@
  * HTTP handlers for the runner request queue and its accept/decline/complete actions.
  */
 import { ApiError } from "../utils/apiError.js";
-import { emitInventoryUpdated, emitRunnerRequestUpdated } from "../sockets/index.js";
+import {
+  emitInventoryUpdated,
+  emitReceptionistOverviewUpdated,
+  emitRunnerRequestUpdated,
+} from "../sockets/index.js";
 import {
   acceptRunnerRequest,
   completeRunnerRequest,
@@ -42,6 +46,7 @@ export async function acceptRunnerQueueRequest(req, res, next) {
     const requestId = parseRequestId(req.params.requestId);
     const item = await acceptRunnerRequest(requestId, req.session);
     emitRunnerRequestUpdated({ requestId, changeType: "runner-request-accepted" });
+    emitReceptionistOverviewUpdated({ requestId, changeType: "runner-request-accepted" });
     res.json({ item });
   } catch (error) {
     next(mapDbError(error));
@@ -54,6 +59,7 @@ export async function declineRunnerQueueRequest(req, res, next) {
     const item = await declineRunnerRequest(requestId, req.session);
     emitRunnerRequestUpdated({ requestId, changeType: "runner-request-declined" });
     emitInventoryUpdated({ requestId, changeType: "runner-request-declined" });
+    emitReceptionistOverviewUpdated({ requestId, changeType: "runner-request-declined" });
     res.json({ item });
   } catch (error) {
     next(mapDbError(error));
@@ -66,6 +72,7 @@ export async function completeRunnerQueueRequest(req, res, next) {
     const item = await completeRunnerRequest(requestId, req.session);
     emitRunnerRequestUpdated({ requestId, changeType: "runner-request-completed" });
     emitInventoryUpdated({ requestId, changeType: "runner-request-completed" });
+    emitReceptionistOverviewUpdated({ requestId, changeType: "runner-request-completed" });
     res.json({ item });
   } catch (error) {
     next(mapDbError(error));

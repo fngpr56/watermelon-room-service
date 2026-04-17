@@ -4,7 +4,11 @@
 import { z } from "zod";
 
 import { ApiError } from "../utils/apiError.js";
-import { emitInventoryUpdated, emitRunnerRequestUpdated } from "../sockets/index.js";
+import {
+  emitInventoryUpdated,
+  emitReceptionistOverviewUpdated,
+  emitRunnerRequestUpdated,
+} from "../sockets/index.js";
 import {
   createRoomRequest,
   deleteRoomRequest,
@@ -80,6 +84,12 @@ export async function createRequestRecord(req, res, next) {
     const payload = createRequestSchema.parse(normalizePayload(req.body));
     const item = await createRoomRequest(req.session.roomId, payload);
 
+    emitReceptionistOverviewUpdated({
+      changeType: "request-created",
+      requestId: item.id,
+      roomId: req.session.roomId,
+    });
+
     if (item.inventoryMatch) {
       emitInventoryUpdated({
         inventoryItemId: item.inventoryMatch.id,
@@ -105,6 +115,11 @@ export async function updateRequestRecord(req, res, next) {
   try {
     const payload = requestSchema.parse(normalizePayload(req.body));
     const item = await updateRoomRequest(String(req.params.requestId || ""), req.session.roomId, payload);
+    emitReceptionistOverviewUpdated({
+      changeType: "request-updated",
+      requestId: item.id,
+      roomId: req.session.roomId,
+    });
     res.json({ item });
   } catch (error) {
     next(error.name === "ZodError" ? new ApiError(400, "Invalid request payload") : error);
@@ -113,7 +128,13 @@ export async function updateRequestRecord(req, res, next) {
 
 export async function removeRequestRecord(req, res, next) {
   try {
-    await deleteRoomRequest(String(req.params.requestId || ""), req.session.roomId);
+    const requestId = String(req.params.requestId || "");
+    await deleteRoomRequest(requestId, req.session.roomId);
+    emitReceptionistOverviewUpdated({
+      changeType: "request-deleted",
+      requestId,
+      roomId: req.session.roomId,
+    });
     res.status(204).send();
   } catch (error) {
     next(error);

@@ -16,6 +16,7 @@ export const swaggerSpec = {
     { name: "Rooms", description: "Authenticated room CRUD operations." },
     { name: "Inventory", description: "Stock and inventory management." },
     { name: "Requests", description: "Room service requests." },
+    { name: "Receptionist", description: "Reception desk monitoring and overview analytics." },
     { name: "Stocktaking", description: "Inventory stocktaking and audits." }
   ],
   components: {
@@ -1143,6 +1144,128 @@ StocktakingUpdateRequest: {
       },
       404: {
         description: "Stocktaking entry not found.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+},
+"/api/receptionist/overview": {
+  get: {
+    tags: ["Receptionist"],
+    summary: "Get receptionist overview metrics",
+    security: [{ sessionCookie: [] }],
+    responses: {
+      200: {
+        description: "Receptionist overview returned successfully."
+      },
+      401: {
+        description: "Missing or invalid session cookie.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      403: {
+        description: "Only staff with the receptionist role can access this resource.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      409: {
+        description: "Database schema is out of date.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+},
+"/api/receptionist/stocktaking": {
+  post: {
+    tags: ["Receptionist"],
+    summary: "Create a receptionist stocktaking entry",
+    description: "Creates a stocktaking entry from the receptionist dashboard. When expected and actual counts do not match, a discrepancy reason is required.",
+    security: [{ sessionCookie: [] }],
+    requestBody: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: {
+            $ref: "#/components/schemas/StocktakingCreateRequest"
+          }
+        }
+      }
+    },
+    responses: {
+      201: {
+        description: "Receptionist stocktaking entry created successfully.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/StocktakingItemResponse"
+            }
+          }
+        }
+      },
+      400: {
+        description: "Invalid stocktaking payload.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      401: {
+        description: "Missing or invalid session cookie.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      403: {
+        description: "Only staff with the receptionist role can access this resource.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      404: {
+        description: "Inventory item not found.",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      409: {
+        description: "Database schema is out of date.",
         content: {
           "application/json": {
             schema: {

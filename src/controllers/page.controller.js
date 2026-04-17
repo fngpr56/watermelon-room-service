@@ -49,6 +49,10 @@ export function showStaffPage(req, res) {
   res.sendFile(path.join(publicDir, "staff.html"));
 }
 
+export function showReceptionistPage(req, res) {
+  res.sendFile(path.join(publicDir, "receptionist.html"));
+}
+
 export function showRunnerPage(req, res) {
   res.sendFile(path.join(publicDir, "runner.html"));
 }

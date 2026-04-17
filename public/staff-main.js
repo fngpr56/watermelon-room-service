@@ -28,6 +28,7 @@ const session = await initializeDashboard({
 });
 
 const isHousekeeping = session?.role === "housekeeping";
+const isReceptionist = session?.role === "receptionist";
 const isRunner = session?.role === "runner";
 
 const form = document.querySelector("#staff-form");
@@ -51,6 +52,7 @@ const roomTableBody = document.querySelector("#room-table-body");
 const roomIdField = document.querySelector("#room-id");
 const roomPasswordField = document.querySelector("#roomPassword");
 const roomTogglePasswordButton = document.querySelector("#room-toggle-password-button");
+const openReceptionistPageButton = document.querySelector("#open-receptionist-page-button");
 const openRunnerPageButton = document.querySelector("#open-runner-page-button");
 
 const inventoryManagementSection = document.querySelector("#inventory-management-section");
@@ -129,6 +131,14 @@ if (openRunnerPageButton) {
 
   if (!isRunner) {
     openRunnerPageButton.remove();
+  }
+}
+
+if (openReceptionistPageButton) {
+  openReceptionistPageButton.hidden = !isReceptionist;
+
+  if (!isReceptionist) {
+    openReceptionistPageButton.remove();
   }
 }
 
@@ -1228,6 +1238,10 @@ conversationRefreshButton.addEventListener("click", async () => {
   } catch (error) {
     setStatus(conversationStatusNode, error.message, "error");
   }
+});
+
+openReceptionistPageButton?.addEventListener("click", () => {
+  navigateTo("/receptionist");
 });
 
 openRunnerPageButton?.addEventListener("click", () => {

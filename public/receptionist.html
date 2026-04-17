@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Receptionist Overview</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell receptionist-shell">
+      <section class="card page-panel page-layout receptionist-page">
+        <section class="receptionist-hero">
+          <div>
+            <span class="eyebrow">Reception Desk</span>
+            <h2 id="page-title">Receptionist overview</h2>
+            <p class="muted">Track arrivals, departures, guest follow-ups, and service demand from one live operational page.</p>
+          </div>
+
+          <article class="receptionist-updated-card">
+            <strong>Live overview</strong>
+            <p id="receptionist-generated-at">Waiting for data...</p>
+          </article>
+        </section>
+
+        <div class="meta" id="meta"></div>
+
+        <div class="button-row page-actions">
+          <button class="secondary" id="back-staff-button" type="button">Staff dashboard</button>
+          <button class="secondary" id="refresh-receptionist-button" type="button">Refresh</button>
+          <button class="secondary" id="logout-button" type="button">Log out</button>
+        </div>
+
+        <section class="grid receptionist-summary-grid">
+          <article class="tile receptionist-stat-card">
+            <span class="receptionist-stat-label">Occupied rooms</span>
+            <strong class="receptionist-stat-value" id="summary-occupied-rooms">0</strong>
+            <p class="muted">Currently checked-in rooms still active in the hotel.</p>
+          </article>
+
+          <article class="tile receptionist-stat-card">
+            <span class="receptionist-stat-label">Arrivals today</span>
+            <strong class="receptionist-stat-value" id="summary-arrivals-today">0</strong>
+            <p class="muted">Rooms with a scheduled check-in date today.</p>
+          </article>
+
+          <article class="tile receptionist-stat-card">
+            <span class="receptionist-stat-label">Departures today</span>
+            <strong class="receptionist-stat-value" id="summary-departures-today">0</strong>
+            <p class="muted">Rooms expected to complete checkout before the day ends.</p>
+          </article>
+
+          <article class="tile receptionist-stat-card">
+            <span class="receptionist-stat-label">Departures tomorrow</span>
+            <strong class="receptionist-stat-value" id="summary-departures-tomorrow">0</strong>
+            <p class="muted">Early visibility into the next wave of checkout activity.</p>
+          </article>
+
+          <article class="tile receptionist-stat-card">
+            <span class="receptionist-stat-label">Open requests</span>
+            <strong class="receptionist-stat-value" id="summary-open-requests">0</strong>
+            <p class="muted">Guest service requests still waiting on delivery or completion.</p>
+          </article>
+
+          <article class="tile receptionist-stat-card">
+            <span class="receptionist-stat-label">Guest follow-ups</span>
+            <strong class="receptionist-stat-value" id="summary-awaiting-responses">0</strong>
+            <p class="muted">Conversation threads where the latest message came from a guest.</p>
+          </article>
+        </section>
+
+        <section class="management-layout receptionist-stocktaking-layout">
+          <article class="tile manager-panel">
+            <div class="section-heading">
+              <strong>Stocktaking entry</strong>
+              <p class="muted">Reception enters the item, expected count, and actual count. The difference is calculated automatically.</p>
+            </div>
+
+            <form id="receptionist-stocktaking-form" class="manager-form">
+              <div class="form-grid">
+                <label class="label form-span-2" for="receptionist-stocktaking-item">
+                  Item
+                  <select id="receptionist-stocktaking-item" name="inventoryItemId" required></select>
+                </label>
+
+                <label class="label" for="receptionist-stocktaking-expected">
+                  Expected count
+                  <input id="receptionist-stocktaking-expected" name="expectedCount" type="number" min="0" step="1" required />
+                </label>
+
+                <label class="label" for="receptionist-stocktaking-physical">
+                  Actual count
+                  <input id="receptionist-stocktaking-physical" name="physicalCount" type="number" min="0" step="1" required />
+                </label>
+
+                <label class="label" for="receptionist-stocktaking-discrepancy">
+                  Difference
+                  <input id="receptionist-stocktaking-discrepancy" class="receptionist-readonly-field" type="text" readonly />
+                </label>
+
+                <label class="label form-span-2" for="receptionist-stocktaking-reason">
+                  Reason for difference
+                  <select id="receptionist-stocktaking-reason" name="reason" disabled>
+                    <option value="">Select reason if counts differ</option>
+                    <option value="damaged">Damaged</option>
+                    <option value="theft">Theft</option>
+                    <option value="miscounted">Miscounted</option>
+                    <option value="supplier_error">Supplier error</option>
+                  </select>
+                </label>
+              </div>
+
+              <p id="receptionist-stocktaking-item-hint" class="muted">Select an item and enter the expected and actual counts.</p>
+              <p id="receptionist-stocktaking-note" class="receptionist-note">Reason becomes required when the difference is not zero.</p>
+
+              <div class="button-row">
+                <button class="primary" id="receptionist-stocktaking-submit" type="submit">Save stocktaking entry</button>
+                <button class="secondary" id="receptionist-stocktaking-reset" type="button">Clear form</button>
+              </div>
+              <p id="receptionist-stocktaking-status" class="status" aria-live="polite"></p>
+            </form>
+          </article>
+
+          <article class="tile manager-panel">
+            <div class="section-heading">
+              <strong id="receptionist-stocktaking-month-label">Current month audit report</strong>
+              <p class="muted">This report is calculated from stocktaking entry created_at timestamps in the current month.</p>
+            </div>
+
+            <section class="grid receptionist-audit-summary-grid">
+              <article class="receptionist-audit-summary-card">
+                <span class="receptionist-mini-label">Entries this month</span>
+                <strong class="receptionist-mini-value" id="receptionist-stocktaking-total-entries">0</strong>
+                <p class="receptionist-mini-copy">Submitted stocktaking snapshots recorded this month.</p>
+              </article>
+
+              <article class="receptionist-audit-summary-card">
+                <span class="receptionist-mini-label">Mismatches</span>
+                <strong class="receptionist-mini-value" id="receptionist-stocktaking-mismatch-entries">0</strong>
+                <p class="receptionist-mini-copy">Entries where the actual and expected counts did not match.</p>
+              </article>
+
+              <article class="receptionist-audit-summary-card">
+                <span class="receptionist-mini-label">Absolute difference</span>
+                <strong class="receptionist-mini-value" id="receptionist-stocktaking-total-difference">0</strong>
+                <p class="receptionist-mini-copy">Combined absolute variance across the month.</p>
+              </article>
+
+              <article class="receptionist-audit-summary-card">
+                <span class="receptionist-mini-label">Latest entry</span>
+                <strong class="receptionist-mini-value receptionist-mini-value-small" id="receptionist-stocktaking-last-entry">-</strong>
+                <p class="receptionist-mini-copy">Most recent current-month stocktaking submission time.</p>
+              </article>
+            </section>
+          </article>
+        </section>
+
+        <section class="receptionist-analytics-grid receptionist-stocktaking-charts">
+          <article class="tile manager-panel receptionist-chart-card">
+            <div class="section-heading">
+              <strong>Difference reasons this month</strong>
+              <p class="muted">Radial view of why stocktaking mismatches were reported this month.</p>
+            </div>
+
+            <div class="receptionist-chart-split">
+              <div class="receptionist-donut-panel">
+                <svg id="receptionist-stocktaking-reason-chart" class="receptionist-donut" viewBox="0 0 220 220" aria-label="Stocktaking reason chart"></svg>
+              </div>
+              <div id="receptionist-stocktaking-reason-legend" class="receptionist-legend"></div>
+            </div>
+          </article>
+
+          <article class="tile manager-panel receptionist-chart-card">
+            <div class="section-heading">
+              <strong>Current month stocktaking activity</strong>
+              <p class="muted">Linear view of how many stocktaking entries were recorded each day this month.</p>
+            </div>
+
+            <svg id="receptionist-stocktaking-activity-chart" class="receptionist-line-chart" viewBox="0 0 560 240" aria-label="Stocktaking activity chart"></svg>
+            <p id="receptionist-stocktaking-activity-copy" class="muted receptionist-chart-copy">No current month stocktaking activity yet.</p>
+          </article>
+        </section>
+
+        <section class="management-layout receptionist-stocktaking-report-layout">
+          <article class="tile manager-panel">
+            <div class="section-heading section-heading-row">
+              <div>
+                <strong>Current month stocktaking entries</strong>
+                <p class="muted">Expected count, actual count, auto-calculated difference, and the recorded reason when the values do not match.</p>
+              </div>
+              <span id="receptionist-stocktaking-count" class="table-count">0 entries</span>
+            </div>
+
+            <div class="table-wrap">
+              <table class="data-table receptionist-table receptionist-entries-table">
+                <thead>
+                  <tr>
+                    <th>Recorded</th>
+                    <th>Item</th>
+                    <th>Expected</th>
+                    <th>Actual</th>
+                    <th>Difference</th>
+                    <th>Reason</th>
+                  </tr>
+                </thead>
+                <tbody id="receptionist-stocktaking-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="receptionist-analytics-grid">
+          <article class="tile manager-panel receptionist-chart-card">
+            <div class="section-heading">
+              <strong>Request status mix</strong>
+              <p class="muted">Radial snapshot of current request outcomes across the hotel.</p>
+            </div>
+
+            <div class="receptionist-chart-split">
+              <div class="receptionist-donut-panel">
+                <svg id="receptionist-status-chart" class="receptionist-donut" viewBox="0 0 220 220" aria-label="Request status mix chart"></svg>
+              </div>
+              <div id="receptionist-status-legend" class="receptionist-legend"></div>
+            </div>
+          </article>
+
+          <article class="tile manager-panel receptionist-chart-card">
+            <div class="section-heading">
+              <strong>7-day request volume</strong>
+              <p class="muted">Linear view of guest request load over the last seven days.</p>
+            </div>
+
+            <svg id="receptionist-volume-chart" class="receptionist-line-chart" viewBox="0 0 560 240" aria-label="Seven day request volume chart"></svg>
+            <div id="receptionist-volume-axis" class="receptionist-axis-row"></div>
+          </article>
+
+          <article class="tile manager-panel receptionist-chart-card">
+            <div class="section-heading">
+              <strong>Service mix</strong>
+              <p class="muted">Where current request demand is concentrating by category.</p>
+            </div>
+
+            <div id="receptionist-category-breakdown" class="receptionist-bar-list"></div>
+          </article>
+
+          <article class="tile manager-panel receptionist-chart-card">
+            <div class="section-heading">
+              <strong>Shift brief</strong>
+              <p class="muted">Auto-generated operational cues for the reception desk.</p>
+            </div>
+
+            <div id="receptionist-brief" class="receptionist-brief-list"></div>
+          </article>
+        </section>
+
+        <section class="management-layout receptionist-ops-layout">
+          <article class="tile manager-panel">
+            <div class="section-heading section-heading-row">
+              <div>
+                <strong>Attention rooms</strong>
+                <p class="muted">Rooms that currently need follow-up because of open requests or guest replies.</p>
+              </div>
+              <span id="attention-room-count" class="table-count">0 rooms</span>
+            </div>
+
+            <div id="receptionist-attention-rooms" class="receptionist-attention-grid"></div>
+          </article>
+
+          <article class="tile manager-panel">
+            <div class="section-heading section-heading-row">
+              <div>
+                <strong>Awaiting guest replies</strong>
+                <p class="muted">Conversation threads where the front desk owes the guest a response.</p>
+              </div>
+              <span id="awaiting-reply-count" class="table-count">0 threads</span>
+            </div>
+
+            <div class="table-wrap">
+              <table class="data-table receptionist-table">
+                <thead>
+                  <tr>
+                    <th>Room</th>
+                    <th>Latest guest message</th>
+                    <th>Assigned</th>
+                    <th>Last update</th>
+                  </tr>
+                </thead>
+                <tbody id="awaiting-reply-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="management-layout receptionist-ops-layout">
+          <article class="tile manager-panel">
+            <div class="section-heading section-heading-row">
+              <div>
+                <strong>Upcoming departures</strong>
+                <p class="muted">Rooms with the next scheduled checkouts so the desk can prepare.</p>
+              </div>
+              <span id="departure-count" class="table-count">0 rooms</span>
+            </div>
+
+            <div class="table-wrap">
+              <table class="data-table receptionist-table">
+                <thead>
+                  <tr>
+                    <th>Room</th>
+                    <th>Guest</th>
+                    <th>Check-out</th>
+                  </tr>
+                </thead>
+                <tbody id="departure-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="tile manager-panel">
+            <div class="section-heading section-heading-row">
+              <div>
+                <strong>Recent request activity</strong>
+                <p class="muted">Latest request events with room, service category, and assigned staff context.</p>
+              </div>
+              <span id="recent-request-count" class="table-count">0 requests</span>
+            </div>
+
+            <div class="table-wrap">
+              <table class="data-table receptionist-table">
+                <thead>
+                  <tr>
+                    <th>Requested</th>
+                    <th>Room</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Assigned</th>
+                  </tr>
+                </thead>
+                <tbody id="recent-request-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <p id="status" class="status" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <script type="module" src="/receptionist-main.js"></script>
+  </body>
+</html>
