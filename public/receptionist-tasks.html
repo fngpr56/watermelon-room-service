@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Receptionist Tasks</title>
+    <link rel="stylesheet" href="/receptionist-theme.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div class="brand">Hotel Kavun</div>
+        <nav class="nav">
+          <a href="/receptionist-tasks.html">Tasks</a>
+          <a href="/receptionist-chats.html">Chats</a>
+          <a href="/receptionist-inventory.html">Inventory</a>
+          <a href="/receptionist-rooms.html">Rooms</a>
+          <a href="#">Settings</a>
+        </nav>
+      </header>
+
+      <section class="layout">
+        <aside class="sidebar">
+          <div class="sidebar-tools">
+            <label class="search">
+              <input type="text" placeholder="Search..." />
+              <span>⌕</span>
+            </label>
+          </div>
+
+          <div class="side-list">
+            <button class="side-item">
+              <p class="side-item-title">3 towels and bot...</p>
+              <div class="side-item-row">
+                <span class="status-pill status-received">Received</span>
+                <span class="side-item-meta">2 min<br />ID: 3</span>
+              </div>
+            </button>
+
+            <button class="side-item">
+              <p class="side-item-title">3 towels</p>
+              <div class="side-item-row">
+                <span class="status-pill status-progress">In progress</span>
+                <span class="side-item-meta">2 min<br />ID: 3</span>
+              </div>
+            </button>
+
+            <button class="side-item">
+              <p class="side-item-title">3 towels</p>
+              <div class="side-item-row">
+                <span class="status-pill status-done">Delivered</span>
+                <span class="side-item-meta">6 min<br />ID: 3</span>
+              </div>
+            </button>
+
+            <button class="side-item">
+              <p class="side-item-title">3 towels</p>
+              <div class="side-item-row">
+                <span class="status-pill status-done">Delivered</span>
+                <span class="side-item-meta">10 min<br />ID: 3</span>
+              </div>
+            </button>
+          </div>
+        </aside>
+
+        <section class="main chat-page">
+          <div class="content">
+            <div class="task-head">
+              <h1 class="content-title">3 towels and bottle of water</h1>
+              <button class="action-pill action-danger">CANCEL</button>
+            </div>
+
+            <div class="task-meta">
+              <span class="status-pill status-received">Received</span>
+              <span class="task-meta-room">Room B 172</span>
+              <span class="task-meta-eta">2 min</span>
+            </div>
+          </div>
+
+          <div class="chat-compose">
+            <div class="chat-input-row">
+              <input class="chat-input" type="text" />
+              <button class="send-button">➤</button>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

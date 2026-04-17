@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Receptionist Inventory</title>
+    <link rel="stylesheet" href="/receptionist-theme.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div class="brand">Hotel Kavun</div>
+        <nav class="nav">
+          <a href="/receptionist-tasks.html">Tasks</a>
+          <a href="/receptionist-chats.html">Chats</a>
+          <a href="/receptionist-inventory.html">Inventory</a>
+          <a href="/receptionist-rooms.html">Rooms</a>
+          <a href="#">Settings</a>
+        </nav>
+      </header>
+
+      <section class="layout">
+        <aside class="sidebar">
+          <div class="sidebar-tools">
+            <label class="search">
+              <input type="text" placeholder="Search..." />
+              <span>⌕</span>
+            </label>
+          </div>
+
+          <div class="side-list">
+            <button class="side-item"><p class="side-item-title">Water bottle</p></button>
+            <button class="side-item"><p class="side-item-title">Towel</p></button>
+            <button class="side-item"><p class="side-item-title">Milk</p></button>
+          </div>
+        </aside>
+
+        <section class="main">
+          <div class="main-toolbar">
+            <button class="action-pill">Create</button>
+          </div>
+
+          <div class="content inventory-grid">
+            <div class="inventory-fields">
+              <h1 class="content-title">Water bottle</h1>
+
+              <div class="inventory-line"><strong>ID:</strong><span>1</span></div>
+              <div class="inventory-line"><strong>Category:</strong><span>Drinks</span></div>
+              <div class="inventory-line"><strong>Unit:</strong><span>Pieces</span></div>
+              <div class="inventory-line"><strong>Quantity:</strong><span>7</span></div>
+              <div class="inventory-line"><strong>Reserve quantity:</strong><span>4</span></div>
+              <div class="inventory-line"><strong>Threshold:</strong><span>3</span></div>
+            </div>
+
+            <div class="inventory-actions">
+              <button class="action-pill action-gold">Edit</button>
+              <button class="action-pill action-gold">Edit</button>
+              <button class="action-pill action-gold">Edit</button>
+              <button class="action-pill action-gold">Edit</button>
+              <button class="action-pill action-gold">Edit</button>
+              <button class="action-pill action-gold">Edit</button>
+              <button class="action-pill action-danger">Delete</button>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
