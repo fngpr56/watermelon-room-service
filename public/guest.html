@@ -9,6 +9,11 @@
   <body>
     <main class="guest-home-screen">
       <section class="guest-home">
+        <div class="guest-toolbar">
+          <div id="meta" class="sr-only" aria-hidden="true"></div>
+          <button id="logout-button" type="button">Log out</button>
+        </div>
+
         <div class="guest-center">
           <h1 id="page-title" class="room-title">172</h1>
 
@@ -33,6 +38,8 @@
         <button id="help-button" type="button">
           Help <span class="help-icon">?</span>
         </button>
+
+        <p id="status" class="sr-only" aria-live="polite"></p>
       </section>
     </main>
 

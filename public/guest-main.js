@@ -1,9 +1,9 @@
-import { initializeDashboard } from "/page-main.js";
+import { initializeDashboard, navigateTo } from "/page-main.js";
 
-initializeDashboard({
+await initializeDashboard({
   expectedUserType: "guest",
   resolveTitle(session) {
-    return session.roomNumber || "B 172";
+    return String(session.roomNumber || "172");
   },
   metaEntries() {
     return [];
@@ -11,11 +11,11 @@ initializeDashboard({
 });
 
 document.querySelector("#tasks-button")?.addEventListener("click", () => {
-  window.location.assign("/guest/tasks");
+  navigateTo("/guest/tasks");
 });
 
 document.querySelector("#help-button")?.addEventListener("click", () => {
-  window.location.assign("/guest/help");
+  navigateTo("/guest/help");
 });
 
 document.querySelector("#microphone-button")?.addEventListener("click", (event) => {

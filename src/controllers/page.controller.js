@@ -1,18 +1,30 @@
 import path from "path";
 
 import { getSession } from "../middleware/auth.js";
+import { getSessionTokenFromRequest, SESSION_QUERY_PARAM } from "../utils/session.js";
 
 const publicDir = path.resolve(process.cwd(), "public");
 
-export function showLoginPage(req, res) {
-  const session = getSession(req);
-
-  if (session?.userType === "guest") {
-    return res.redirect("/guest");
+function withSessionPath(pathname, sessionToken) {
+  if (!sessionToken) {
+    return pathname;
   }
 
-  if (session?.userType === "staff") {
-    return res.redirect("/staff");
+  const url = new URL(pathname, "http://localhost");
+  url.searchParams.set(SESSION_QUERY_PARAM, sessionToken);
+  return `${url.pathname}${url.search}`;
+}
+
+export function showLoginPage(req, res) {
+  const session = getSession(req);
+  const sessionToken = getSessionTokenFromRequest(req);
+
+  if (session?.userType === "guest" && sessionToken) {
+    return res.redirect(withSessionPath("/guest", sessionToken));
+  }
+
+  if (session?.userType === "staff" && sessionToken) {
+    return res.redirect(withSessionPath("/staff", sessionToken));
   }
 
   res.sendFile(path.join(publicDir, "login.html"));

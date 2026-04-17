@@ -1,4 +1,4 @@
-import { initializeDashboard } from "/page-main.js";
+import { connectSessionSocket, fetchWithSession, initializeDashboard } from "/page-main.js";
 
 const session = await initializeDashboard({
   expectedUserType: "staff",
@@ -12,6 +12,8 @@ const session = await initializeDashboard({
   },
 });
 
+const isHousekeeping = session?.role === "housekeeping";
+
 const form = document.querySelector("#staff-form");
 const formTitle = document.querySelector("#form-title");
 const submitButton = document.querySelector("#submit-staff-button");
@@ -21,6 +23,7 @@ const staffCountNode = document.querySelector("#staff-count");
 const staffTableBody = document.querySelector("#staff-table-body");
 const idField = document.querySelector("#staff-id");
 const passwordField = document.querySelector("#password");
+const togglePasswordButton = document.querySelector("#staff-toggle-password-button");
 
 const roomForm = document.querySelector("#room-form");
 const roomFormTitle = document.querySelector("#room-form-title");
@@ -31,6 +34,33 @@ const roomCountNode = document.querySelector("#room-count");
 const roomTableBody = document.querySelector("#room-table-body");
 const roomIdField = document.querySelector("#room-id");
 const roomPasswordField = document.querySelector("#roomPassword");
+
+const inventoryManagementSection = document.querySelector("#inventory-management-section");
+const inventoryForm = document.querySelector("#inventory-form");
+const inventoryFormTitle = document.querySelector("#inventory-form-title");
+const inventorySubmitButton = document.querySelector("#submit-inventory-button");
+const inventoryResetButton = document.querySelector("#reset-inventory-button");
+const inventoryStatusNode = document.querySelector("#inventory-status");
+const inventoryCountNode = document.querySelector("#inventory-count");
+const inventoryTableBody = document.querySelector("#inventory-table-body");
+const inventoryIdField = document.querySelector("#inventory-id");
+const inventoryNameField = document.querySelector("#inventory-name");
+const inventoryCategoryField = document.querySelector("#inventory-category");
+const inventoryUnitField = document.querySelector("#inventory-unit");
+const inventoryQuantityInStockField = document.querySelector("#inventory-quantity-in-stock");
+const inventoryQuantityReservedField = document.querySelector("#inventory-quantity-reserved");
+const inventoryLowStockThresholdField = document.querySelector("#inventory-low-stock-threshold");
+
+const inventoryAssignmentSection = document.querySelector("#inventory-assignment-section");
+const inventoryAssignmentForm = document.querySelector("#inventory-assignment-form");
+const inventoryAssignmentItemField = document.querySelector("#assignment-inventory-item-id");
+const inventoryAssignmentRoomField = document.querySelector("#assignment-room-id");
+const inventoryAssignmentQuantityField = document.querySelector("#assignment-quantity");
+const inventoryAssignmentSubmitButton = document.querySelector("#submit-assignment-button");
+const inventoryAssignmentResetButton = document.querySelector("#reset-assignment-button");
+const inventoryAssignmentStatusNode = document.querySelector("#assignment-status");
+const inventoryAssignmentCountNode = document.querySelector("#assignment-count");
+const inventoryAssignmentTableBody = document.querySelector("#assignment-table-body");
 
 const conversationListNode = document.querySelector("#conversation-list");
 const conversationCountNode = document.querySelector("#conversation-count");
@@ -45,10 +75,21 @@ const conversationStatusNode = document.querySelector("#conversation-status");
 
 let staffUsers = [];
 let rooms = [];
+let inventoryItems = [];
+let inventoryAssignments = [];
 let conversations = [];
 let activeConversationId = null;
 let currentConversation = null;
 let conversationPollHandle = null;
+let conversationSocket = null;
+
+if (inventoryManagementSection) {
+  inventoryManagementSection.hidden = !isHousekeeping;
+}
+
+if (inventoryAssignmentSection) {
+  inventoryAssignmentSection.hidden = !isHousekeeping;
+}
 
 function setStatus(node, message, tone = "") {
   node.textContent = message;
@@ -67,12 +108,28 @@ function formatCompactDateTime(value) {
   return value ? value.replace("T", " ").slice(0, 16) : "-";
 }
 
+function formatRoomDisplayName(room) {
+  return room.owner ? `Room ${room.roomNumber} - ${room.owner}` : `Room ${room.roomNumber}`;
+}
+
+function resetStaffPasswordVisibility() {
+  passwordField.type = "password";
+
+  if (!togglePasswordButton) {
+    return;
+  }
+
+  togglePasswordButton.textContent = "Show";
+  togglePasswordButton.setAttribute("aria-label", "Show password");
+}
+
 function resetStaffForm() {
   form.reset();
   idField.value = "";
   submitButton.textContent = "Create staff user";
   formTitle.textContent = "Create staff user";
   passwordField.required = true;
+  resetStaffPasswordVisibility();
   setStatus(staffStatusNode, "");
 }
 
@@ -83,6 +140,25 @@ function resetRoomForm() {
   roomFormTitle.textContent = "Create room";
   roomPasswordField.required = true;
   setStatus(roomStatusNode, "");
+}
+
+function resetInventoryForm() {
+  inventoryForm.reset();
+  inventoryIdField.value = "";
+  inventoryFormTitle.textContent = "Add inventory item";
+  inventorySubmitButton.textContent = "Add inventory item";
+  inventoryQuantityInStockField.value = "0";
+  inventoryQuantityReservedField.value = "0";
+  inventoryLowStockThresholdField.value = "0";
+  setStatus(inventoryStatusNode, "");
+}
+
+function resetInventoryAssignmentForm() {
+  inventoryAssignmentForm.reset();
+  inventoryAssignmentQuantityField.value = "1";
+  renderInventoryItemOptions();
+  renderRoomOptions();
+  setStatus(inventoryAssignmentStatusNode, "");
 }
 
 function populateStaffForm(staffUser) {
@@ -99,6 +175,7 @@ function populateStaffForm(staffUser) {
   submitButton.textContent = "Update staff user";
   formTitle.textContent = `Edit ${staffUser.firstName} ${staffUser.lastName}`;
   passwordField.required = false;
+  resetStaffPasswordVisibility();
   setStatus(staffStatusNode, "Editing staff user. Leave password blank to keep the current password.", "ok");
 }
 
@@ -113,6 +190,19 @@ function populateRoomForm(room) {
   roomFormTitle.textContent = `Edit room ${room.roomNumber}`;
   roomPasswordField.required = false;
   setStatus(roomStatusNode, "Editing room. Leave password blank to keep the current password.", "ok");
+}
+
+function populateInventoryForm(item) {
+  inventoryIdField.value = String(item.id);
+  inventoryNameField.value = item.name;
+  inventoryCategoryField.value = item.category;
+  inventoryUnitField.value = item.unit;
+  inventoryQuantityInStockField.value = String(item.quantityInStock);
+  inventoryQuantityReservedField.value = String(item.quantityReserved);
+  inventoryLowStockThresholdField.value = String(item.lowStockThreshold);
+  inventoryFormTitle.textContent = `Edit ${item.name}`;
+  inventorySubmitButton.textContent = "Update inventory item";
+  setStatus(inventoryStatusNode, "Editing inventory item.", "ok");
 }
 
 function createActionButton(label, className, onClick, options = {}) {
@@ -234,6 +324,148 @@ function renderRoomTable() {
     row.append(actionsCell);
 
     roomTableBody.append(row);
+  }
+}
+
+function renderInventoryItemOptions(selectedId = inventoryAssignmentItemField?.value || "") {
+  inventoryAssignmentItemField.innerHTML = "";
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = inventoryItems.length === 0 ? "No inventory items available" : "Select inventory item";
+  inventoryAssignmentItemField.append(placeholder);
+
+  for (const item of inventoryItems) {
+    const option = document.createElement("option");
+    option.value = String(item.id);
+    option.textContent = `${item.name} - ${item.quantityInStock} ${item.unit} in stock`;
+    inventoryAssignmentItemField.append(option);
+  }
+
+  inventoryAssignmentItemField.value = String(selectedId || "");
+}
+
+function renderRoomOptions(selectedId = inventoryAssignmentRoomField?.value || "") {
+  inventoryAssignmentRoomField.innerHTML = "";
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = rooms.length === 0 ? "No rooms available" : "Select room";
+  inventoryAssignmentRoomField.append(placeholder);
+
+  for (const room of rooms) {
+    const option = document.createElement("option");
+    option.value = String(room.id);
+    option.textContent = formatRoomDisplayName(room);
+    inventoryAssignmentRoomField.append(option);
+  }
+
+  inventoryAssignmentRoomField.value = String(selectedId || "");
+}
+
+function renderInventoryTable() {
+  inventoryTableBody.innerHTML = "";
+
+  if (inventoryItems.length === 0) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 7;
+    cell.className = "empty-state";
+    cell.textContent = "No inventory items found.";
+    row.append(cell);
+    inventoryTableBody.append(row);
+    inventoryCountNode.textContent = "0 items";
+    return;
+  }
+
+  inventoryCountNode.textContent = `${inventoryItems.length} item${inventoryItems.length === 1 ? "" : "s"}`;
+
+  for (const item of inventoryItems) {
+    const row = document.createElement("tr");
+
+    const nameCell = document.createElement("td");
+    nameCell.textContent = item.name;
+    row.append(nameCell);
+
+    const categoryCell = document.createElement("td");
+    categoryCell.textContent = item.category;
+    row.append(categoryCell);
+
+    const unitCell = document.createElement("td");
+    unitCell.textContent = item.unit;
+    row.append(unitCell);
+
+    const stockCell = document.createElement("td");
+    stockCell.textContent = item.quantityInStock <= item.lowStockThreshold
+      ? `${item.quantityInStock} (low)`
+      : String(item.quantityInStock);
+    row.append(stockCell);
+
+    const reservedCell = document.createElement("td");
+    reservedCell.textContent = String(item.quantityReserved);
+    row.append(reservedCell);
+
+    const lowStockCell = document.createElement("td");
+    lowStockCell.textContent = String(item.lowStockThreshold);
+    row.append(lowStockCell);
+
+    const actionsCell = document.createElement("td");
+    actionsCell.className = "table-actions";
+    actionsCell.append(
+      createActionButton("Edit", "secondary table-button", () => populateInventoryForm(item)),
+      createActionButton("Delete", "danger table-button", () => deleteInventoryItemRecord(item))
+    );
+    row.append(actionsCell);
+
+    inventoryTableBody.append(row);
+  }
+}
+
+function renderInventoryAssignmentTable() {
+  inventoryAssignmentTableBody.innerHTML = "";
+
+  if (inventoryAssignments.length === 0) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 6;
+    cell.className = "empty-state";
+    cell.textContent = "No inventory assignments yet.";
+    row.append(cell);
+    inventoryAssignmentTableBody.append(row);
+    inventoryAssignmentCountNode.textContent = "0 assignments";
+    return;
+  }
+
+  inventoryAssignmentCountNode.textContent = `${inventoryAssignments.length} assignment${inventoryAssignments.length === 1 ? "" : "s"}`;
+
+  for (const assignment of inventoryAssignments) {
+    const row = document.createElement("tr");
+
+    const assignedCell = document.createElement("td");
+    assignedCell.textContent = formatDateTime(assignment.assignedAt);
+    row.append(assignedCell);
+
+    const roomCell = document.createElement("td");
+    roomCell.textContent = assignment.room.displayName;
+    row.append(roomCell);
+
+    const itemCell = document.createElement("td");
+    itemCell.textContent = assignment.inventoryItem.name;
+    row.append(itemCell);
+
+    const quantityCell = document.createElement("td");
+    quantityCell.textContent = `${assignment.quantity} ${assignment.inventoryItem.unit}`;
+    row.append(quantityCell);
+
+    const staffCell = document.createElement("td");
+    staffCell.textContent = assignment.staff.displayName;
+    row.append(staffCell);
+
+    const notesCell = document.createElement("td");
+    notesCell.textContent = escapeEmpty(assignment.notes);
+    row.append(notesCell);
+
+    inventoryAssignmentTableBody.append(row);
   }
 }
 
@@ -368,8 +600,7 @@ function updateConversationComposerState() {
 }
 
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
-    credentials: "same-origin",
+  const response = await fetchWithSession(url, {
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
@@ -444,6 +675,30 @@ function getRoomPayload() {
   return payload;
 }
 
+function getInventoryPayload() {
+  const formData = new FormData(inventoryForm);
+
+  return {
+    name: String(formData.get("name") || "").trim(),
+    category: String(formData.get("category") || "").trim(),
+    unit: String(formData.get("unit") || "").trim(),
+    quantityInStock: Number(formData.get("quantityInStock") || 0),
+    quantityReserved: Number(formData.get("quantityReserved") || 0),
+    lowStockThreshold: Number(formData.get("lowStockThreshold") || 0),
+  };
+}
+
+function getInventoryAssignmentPayload() {
+  const formData = new FormData(inventoryAssignmentForm);
+
+  return {
+    roomId: Number(formData.get("roomId") || 0),
+    inventoryItemId: Number(formData.get("inventoryItemId") || 0),
+    quantity: Number(formData.get("quantity") || 0),
+    notes: String(formData.get("notes") || "").trim() || null,
+  };
+}
+
 async function loadStaffUsers() {
   const payload = await requestJson("/api/staff");
   staffUsers = payload.items || [];
@@ -454,6 +709,23 @@ async function loadRooms() {
   const payload = await requestJson("/api/rooms");
   rooms = payload.items || [];
   renderRoomTable();
+
+  if (isHousekeeping) {
+    renderRoomOptions();
+  }
+}
+
+async function loadInventoryItems() {
+  const payload = await requestJson("/api/inventory");
+  inventoryItems = payload.items || [];
+  renderInventoryTable();
+  renderInventoryItemOptions();
+}
+
+async function loadInventoryAssignments() {
+  const payload = await requestJson("/api/inventory/assignments");
+  inventoryAssignments = payload.items || [];
+  renderInventoryAssignmentTable();
 }
 
 async function loadConversations() {
@@ -490,6 +762,22 @@ async function refreshConversationState() {
   }
 }
 
+async function handleRealtimeConversationUpdate(payload) {
+  const updatedConversationId = Number(payload?.conversation?.id || 0);
+  const hadActiveConversation = Boolean(activeConversationId);
+
+  await loadConversations();
+
+  if (!hadActiveConversation && updatedConversationId > 0) {
+    activeConversationId = updatedConversationId;
+    renderConversationList();
+  }
+
+  if (updatedConversationId > 0 && Number(activeConversationId) === updatedConversationId) {
+    renderConversationThread(payload);
+  }
+}
+
 function startConversationPolling() {
   if (conversationPollHandle) {
     window.clearInterval(conversationPollHandle);
@@ -500,6 +788,19 @@ function startConversationPolling() {
       // Keep the current UI visible on transient polling errors.
     });
   }, 8000);
+}
+
+async function startRealtimeConversationUpdates() {
+  try {
+    conversationSocket = await connectSessionSocket();
+    conversationSocket.on("conversation:updated", (payload) => {
+      handleRealtimeConversationUpdate(payload).catch(() => {
+        // Polling remains as a fallback path if realtime refresh work fails.
+      });
+    });
+  } catch {
+    // Polling remains active if the realtime channel cannot connect.
+  }
 }
 
 async function deleteStaffUser(staffUser) {
@@ -550,6 +851,29 @@ async function deleteRoom(room) {
     await loadRooms();
   } catch (error) {
     setStatus(roomStatusNode, error.message, "error");
+  }
+}
+
+async function deleteInventoryItemRecord(item) {
+  const confirmed = window.confirm(`Delete inventory item ${item.name}?`);
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await requestJson(`/api/inventory/${item.id}`, {
+      method: "DELETE",
+    });
+    setStatus(inventoryStatusNode, "Inventory item deleted.", "ok");
+
+    if (String(item.id) === inventoryIdField.value) {
+      resetInventoryForm();
+    }
+
+    await loadInventoryItems();
+  } catch (error) {
+    setStatus(inventoryStatusNode, error.message, "error");
   }
 }
 
@@ -613,6 +937,54 @@ roomForm.addEventListener("submit", async (event) => {
   }
 });
 
+inventoryForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const inventoryId = inventoryIdField.value;
+  const isEditing = Boolean(inventoryId);
+  const payload = getInventoryPayload();
+
+  inventorySubmitButton.disabled = true;
+  setStatus(inventoryStatusNode, isEditing ? "Updating inventory item..." : "Creating inventory item...", "ok");
+
+  try {
+    await requestJson(isEditing ? `/api/inventory/${inventoryId}` : "/api/inventory", {
+      method: isEditing ? "PUT" : "POST",
+      body: JSON.stringify(payload),
+    });
+    setStatus(inventoryStatusNode, isEditing ? "Inventory item updated." : "Inventory item created.", "ok");
+    resetInventoryForm();
+    await loadInventoryItems();
+  } catch (error) {
+    setStatus(inventoryStatusNode, error.message, "error");
+  } finally {
+    inventorySubmitButton.disabled = false;
+  }
+});
+
+inventoryAssignmentForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const payload = getInventoryAssignmentPayload();
+
+  inventoryAssignmentSubmitButton.disabled = true;
+  setStatus(inventoryAssignmentStatusNode, "Assigning inventory to room...", "ok");
+
+  try {
+    await requestJson("/api/inventory/assignments", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    setStatus(inventoryAssignmentStatusNode, "Inventory assigned to room.", "ok");
+    resetInventoryAssignmentForm();
+    await Promise.all([loadInventoryItems(), loadInventoryAssignments()]);
+  } catch (error) {
+    setStatus(inventoryAssignmentStatusNode, error.message, "error");
+  } finally {
+    inventoryAssignmentSubmitButton.disabled = false;
+  }
+});
+
 conversationForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -652,12 +1024,28 @@ conversationForm.addEventListener("submit", async (event) => {
   }
 });
 
+togglePasswordButton?.addEventListener("click", () => {
+  const isHidden = passwordField.type === "password";
+
+  passwordField.type = isHidden ? "text" : "password";
+  togglePasswordButton.textContent = isHidden ? "Hide" : "Show";
+  togglePasswordButton.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+});
+
 resetButton.addEventListener("click", () => {
   resetStaffForm();
 });
 
 roomResetButton.addEventListener("click", () => {
   resetRoomForm();
+});
+
+inventoryResetButton?.addEventListener("click", () => {
+  resetInventoryForm();
+});
+
+inventoryAssignmentResetButton?.addEventListener("click", () => {
+  resetInventoryAssignmentForm();
 });
 
 conversationRefreshButton.addEventListener("click", async () => {
@@ -671,7 +1059,18 @@ conversationRefreshButton.addEventListener("click", async () => {
 });
 
 if (session?.staffId) {
-  await Promise.all([loadStaffUsers(), loadRooms(), loadConversations()]);
+  const startupTasks = [loadStaffUsers(), loadRooms(), loadConversations()];
+
+  if (isHousekeeping) {
+    startupTasks.push(loadInventoryItems(), loadInventoryAssignments());
+  }
+
+  await Promise.all(startupTasks);
+
+  if (isHousekeeping) {
+    resetInventoryForm();
+    resetInventoryAssignmentForm();
+  }
 
   if (activeConversationId) {
     await loadConversationDetails(activeConversationId);
@@ -680,10 +1079,15 @@ if (session?.staffId) {
   }
 
   startConversationPolling();
+  await startRealtimeConversationUpdates();
 }
 
 window.addEventListener("beforeunload", () => {
   if (conversationPollHandle) {
     window.clearInterval(conversationPollHandle);
+  }
+
+  if (conversationSocket) {
+    conversationSocket.disconnect();
   }
 });

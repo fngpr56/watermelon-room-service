@@ -1,6 +1,8 @@
 import crypto from "crypto";
 
 export const SESSION_COOKIE_NAME = "wrs_session";
+export const SESSION_HEADER_NAME = "x-wrs-session";
+export const SESSION_QUERY_PARAM = "session";
 const SESSION_TTL_SECONDS = 60 * 60 * 8;
 
 function toBase64Url(value) {
@@ -15,16 +17,28 @@ function signPayload(payload, secret) {
   return crypto.createHmac("sha256", secret).update(payload).digest("base64url");
 }
 
-function parseCookieHeader(cookieHeader) {
-  if (!cookieHeader) {
-    return {};
+function parseSessionValue(rawSession, secret) {
+  const [payload, signature] = String(rawSession || "").split(".");
+
+  if (!payload || !signature) {
+    return null;
   }
 
-  return cookieHeader.split(";").reduce((cookies, chunk) => {
-    const [name, ...rest] = chunk.trim().split("=");
-    cookies[name] = rest.join("=");
-    return cookies;
-  }, {});
+  const expectedSignature = signPayload(payload, secret);
+  const actual = Buffer.from(signature);
+  const expected = Buffer.from(expectedSignature);
+
+  if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) {
+    return null;
+  }
+
+  const session = JSON.parse(fromBase64Url(payload));
+
+  if (!session.exp || session.exp < Date.now()) {
+    return null;
+  }
+
+  return session;
 }
 
 export function createSession(user) {
@@ -35,12 +49,16 @@ export function createSession(user) {
   };
 }
 
-export function serializeSessionCookie(session, secret, secure = false) {
-  // The cookie stores the payload plus a signature to catch tampering.
+export function serializeSessionToken(session, secret) {
   const payload = toBase64Url(JSON.stringify(session));
   const signature = signPayload(payload, secret);
+  return `${payload}.${signature}`;
+}
+
+export function serializeSessionCookie(session, secret, secure = false) {
+  // The cookie stores the payload plus a signature to catch tampering.
   const parts = [
-    `${SESSION_COOKIE_NAME}=${payload}.${signature}`,
+    `${SESSION_COOKIE_NAME}=${serializeSessionToken(session, secret)}`,
     "Path=/",
     "HttpOnly",
     "SameSite=Strict",
@@ -70,35 +88,35 @@ export function clearSessionCookie(secure = false) {
   return parts.join("; ");
 }
 
-export function readSessionFromRequest(req, secret) {
-  const cookies = parseCookieHeader(req.headers.cookie);
-  const rawSession = cookies[SESSION_COOKIE_NAME];
+export function getSessionTokenFromRequest(req) {
+  const headerToken = String(req.headers[SESSION_HEADER_NAME] || "").trim();
 
+  if (headerToken) {
+    return headerToken;
+  }
+
+  const queryToken = req.query?.[SESSION_QUERY_PARAM];
+
+  if (typeof queryToken === "string" && queryToken.trim()) {
+    return queryToken.trim();
+  }
+
+  return null;
+}
+
+export function readSessionFromToken(rawSession, secret) {
   if (!rawSession) {
     return null;
   }
 
-  const [payload, signature] = rawSession.split(".");
-
-  if (!payload || !signature) {
+  try {
+    return parseSessionValue(String(rawSession).trim(), secret);
+  } catch {
     return null;
   }
+}
 
-  const expectedSignature = signPayload(payload, secret);
-  const actual = Buffer.from(signature);
-  const expected = Buffer.from(expectedSignature);
-
-  // Reject broken or forged cookies.
-  if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) {
-    return null;
-  }
-
-  const session = JSON.parse(fromBase64Url(payload));
-
-  // Expired cookies behave like missing cookies.
-  if (!session.exp || session.exp < Date.now()) {
-    return null;
-  }
-
-  return session;
+export function readSessionFromRequest(req, secret) {
+  const rawSession = getSessionTokenFromRequest(req);
+  return readSessionFromToken(rawSession, secret);
 }
