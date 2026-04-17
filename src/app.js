@@ -13,6 +13,7 @@ import pageRoutes from "./routes/page.routes.js";
 import roomsRoutes from "./routes/rooms.routes.js";
 import inventoryRoutes from "./routes/inventory.routes.js";
 import requestsRoutes from "./routes/requests.routes.js";
+import stocktakingRoutes from "./routes/stocktaking.routes.js";
 import { notFound } from "./middleware/notFound.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { logger } from "./utils/logger.js";
@@ -64,6 +65,7 @@ app.use("/api/staff", staffRoutes);
 app.use("/api/rooms", roomsRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/requests", requestsRoutes);
+app.use("/api/stocktaking", stocktakingRoutes);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, { customSiteTitle: "API Docs" }));
 app.use("/", pageRoutes);
 
