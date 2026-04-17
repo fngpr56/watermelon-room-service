@@ -2,15 +2,11 @@ import { fetchWithSession, initializeDashboard, navigateTo } from "/page-main.js
 
 await initializeDashboard({
   expectedUserType: "guest",
-  resolveTitle() {
-    return "Guest Tasks";
+  resolveTitle(session) {
+    return `Room ${session.roomNumber}`;
   },
-  metaEntries(session) {
-    return [
-      { label: "Room", value: `#${session.roomNumber}` },
-      { label: "Guest", value: session.displayName },
-      { label: "Workspace", value: "Requests" },
-    ];
+  metaEntries() {
+    return [];
   },
 });
 
