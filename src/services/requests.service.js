@@ -228,10 +228,6 @@ function buildReservationReason(item, fullRequest) {
   return `Reserved${itemLabel}${requestLabel}`.slice(0, 100);
 }
 
-function buildAssignmentNote(fullRequest) {
-  return String(fullRequest || "").trim().slice(0, 255) || null;
-}
-
 function buildAvailabilityError(item) {
   const availableQuantity = Math.max(0, Number(item.availableQuantity) || 0);
   const unitLabel = availableQuantity === 1 ? item.unit : `${item.unit}s`;
@@ -263,20 +259,6 @@ async function getRoomById(conn, roomId) {
      WHERE id = ?
      LIMIT 1`,
     [roomId]
-  );
-
-  return rows[0] || null;
-}
-
-async function getRandomHousekeepingStaff(conn) {
-  const rows = await conn.query(
-    `SELECT id,
-            first_name AS firstName,
-            last_name AS lastName
-     FROM staff
-     WHERE role = 'housekeeping'
-     ORDER BY RAND()
-     LIMIT 1`
   );
 
   return rows[0] || null;
@@ -327,29 +309,6 @@ async function createInventoryReservationForRequest(conn, requestId, item, quant
     category: item.category,
     unit: item.unit,
     quantityRequested: quantity,
-  };
-}
-
-async function createInventoryAssignmentForRequest(conn, roomId, item, quantity, assignedStaffId, fullRequest) {
-  const result = await conn.query(
-    `INSERT INTO inventory_room_assignments (
-      inventory_item_id,
-      room_id,
-      staff_id,
-      quantity,
-      status,
-      notes
-    ) VALUES (?, ?, ?, ?, ?, ?)`,
-    [item.id, roomId, assignedStaffId, quantity, 'started', buildAssignmentNote(fullRequest)]
-  );
-
-  return {
-    id: Number(result.insertId),
-    inventoryItemId: item.id,
-    roomId,
-    staffId: assignedStaffId,
-    quantity,
-    status: 'started',
   };
 }
 
@@ -475,14 +434,9 @@ export async function createRoomRequest(roomId, data) {
     const matchedItem = selectedItem || findCatalogItemMatch(catalogItems, data.fullRequest);
     const quantityRequested = matchedItem ? resolveRequestedQuantity(data, data.fullRequest) : null;
     const assignedRoom = matchedItem ? await getRoomById(conn, roomId) : null;
-    const assignedHousekeeping = matchedItem ? await getRandomHousekeepingStaff(conn) : null;
 
     if (matchedItem && !assignedRoom) {
       throw new ApiError(404, "Room not found");
-    }
-
-    if (matchedItem && !assignedHousekeeping) {
-      throw new ApiError(409, "No housekeeping staff available for automatic inventory assignment");
     }
 
     const requestId = randomUUID();
@@ -503,7 +457,7 @@ export async function createRoomRequest(roomId, data) {
       [
         requestId,
         roomId,
-        assignedHousekeeping?.id || null,
+        null,
         data.fullRequest,
         data.category || matchedItem?.category || null,
         data.statusId,
@@ -520,18 +474,7 @@ export async function createRoomRequest(roomId, data) {
           matchedItem,
           quantityRequested,
           data.fullRequest,
-          assignedHousekeeping.id
-        )
-      : null;
-
-    const inventoryAssignment = matchedItem && !isTerminalStatus(status.code)
-      ? await createInventoryAssignmentForRequest(
-          conn,
-          roomId,
-          matchedItem,
-          quantityRequested,
-          assignedHousekeeping.id,
-          data.fullRequest
+          null
         )
       : null;
 
@@ -542,7 +485,7 @@ export async function createRoomRequest(roomId, data) {
     return {
       ...formatRequest(created),
       inventoryMatch,
-      inventoryAssignment,
+      inventoryAssignment: null,
     };
   } catch (error) {
     if (conn) {

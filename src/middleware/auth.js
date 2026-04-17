@@ -29,6 +29,23 @@ export function requireRole(role) {
   };
 }
 
+export function requireStaffRole(role) {
+  return function authorize(req, res, next) {
+    const session = getSession(req);
+
+    if (!session || session.userType !== "staff") {
+      return res.redirect("/login");
+    }
+
+    if (session.role !== role) {
+      return res.redirect("/staff");
+    }
+
+    req.session = session;
+    next();
+  };
+}
+
 export function requireApiRole(role) {
   return function authorize(req, res, next) {
     const session = getSession(req);

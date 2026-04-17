@@ -1,7 +1,7 @@
 /**
  * OpenAPI document definition for the HTTP endpoints exposed by this application.
  */
-const staffRoles = ["manager", "front_desk", "housekeeping", "room_service", "maintenance", "attendant"];
+const staffRoles = ["manager", "front_desk", "housekeeping", "room_service", "maintenance", "attendant", "receptionist", "runner"];
 
 export const swaggerSpec = {
   openapi: "3.0.3",

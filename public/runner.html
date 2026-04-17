@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Runner Queue</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card page-panel page-layout">
+        <div>
+          <span class="eyebrow">Runner Area</span>
+          <h2 id="page-title">Runner queue</h2>
+          <p class="muted">Inventory-backed guest requests arrive here first so runners can accept, decline, and close deliveries.</p>
+        </div>
+
+        <div class="meta" id="meta"></div>
+
+        <div class="button-row page-actions">
+          <button class="secondary" id="back-staff-button" type="button">Staff dashboard</button>
+          <button class="secondary" id="refresh-runner-button" type="button">Refresh</button>
+          <button class="secondary" id="logout-button" type="button">Log out</button>
+        </div>
+
+        <section class="grid runner-summary-grid">
+          <article class="tile runner-stat-card">
+            <span class="runner-stat-label">Pending intake</span>
+            <strong class="runner-stat-value" id="summary-pending-value">0</strong>
+            <p class="muted">Fresh guest item requests waiting for a runner to claim them.</p>
+          </article>
+
+          <article class="tile runner-stat-card">
+            <span class="runner-stat-label">My active deliveries</span>
+            <strong class="runner-stat-value" id="summary-active-value">0</strong>
+            <p class="muted">Requests you have accepted and can still complete from this page.</p>
+          </article>
+
+          <article class="tile runner-stat-card">
+            <span class="runner-stat-label">Resolved by me</span>
+            <strong class="runner-stat-value" id="summary-resolved-value">0</strong>
+            <p class="muted">Delivered or declined runner requests currently recorded under your account.</p>
+          </article>
+        </section>
+
+        <article class="tile manager-panel">
+          <div class="section-heading section-heading-row">
+            <div>
+              <strong>Pending runner queue</strong>
+              <p class="muted">New inventory requests remain here until a runner accepts or declines them.</p>
+            </div>
+            <span id="pending-count" class="table-count">0 requests</span>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table runner-table">
+              <thead>
+                <tr>
+                  <th>Requested</th>
+                  <th>Room</th>
+                  <th>Items</th>
+                  <th>Request</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="pending-table-body"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <section class="management-layout runner-secondary-layout">
+          <article class="tile manager-panel">
+            <div class="section-heading section-heading-row">
+              <div>
+                <strong>My active deliveries</strong>
+                <p class="muted">Accepted runner requests stay here until you mark them delivered.</p>
+              </div>
+              <span id="active-count" class="table-count">0 requests</span>
+            </div>
+
+            <div class="table-wrap">
+              <table class="data-table runner-table">
+                <thead>
+                  <tr>
+                    <th>Accepted</th>
+                    <th>Room</th>
+                    <th>Items</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="active-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="tile manager-panel">
+            <div class="section-heading section-heading-row">
+              <div>
+                <strong>Recently resolved</strong>
+                <p class="muted">Recent deliveries and declined requests that were handled by your runner account.</p>
+              </div>
+              <span id="resolved-count" class="table-count">0 requests</span>
+            </div>
+
+            <div class="table-wrap">
+              <table class="data-table runner-table">
+                <thead>
+                  <tr>
+                    <th>Closed</th>
+                    <th>Room</th>
+                    <th>Items</th>
+                    <th>Outcome</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="resolved-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <p id="status" class="status" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <script type="module" src="/runner-main.js"></script>
+  </body>
+</html>

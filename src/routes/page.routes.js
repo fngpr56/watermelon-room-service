@@ -8,9 +8,10 @@ import {
   showGuestPage,
   showGuestTasksPage,
   showLoginPage,
+  showRunnerPage,
   showStaffPage,
 } from "../controllers/page.controller.js";
-import { requireRole } from "../middleware/auth.js";
+import { requireRole, requireStaffRole } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.get("/guest", requireRole("guest"), showGuestPage);
 router.get("/guest/tasks", requireRole("guest"), showGuestTasksPage);
 router.get("/guest/help", requireRole("guest"), showGuestHelpPage);
 router.get("/staff", requireRole("staff"), showStaffPage);
+router.get("/runner", requireStaffRole("runner"), showRunnerPage);
 
 export default router;

@@ -6,7 +6,7 @@ import { z } from "zod";
 import { deleteStaffUser, listStaffUsers, createStaffUser, updateStaffUser } from "../services/staff.service.js";
 import { ApiError } from "../utils/apiError.js";
 
-const staffRoleValues = ["manager", "front_desk", "housekeeping", "room_service", "maintenance", "attendant"];
+const staffRoleValues = ["manager", "front_desk", "housekeeping", "room_service", "maintenance", "attendant", "receptionist", "runner"];
 
 const baseStaffSchema = z.object({
   firstName: z.string().trim().min(1).max(20),

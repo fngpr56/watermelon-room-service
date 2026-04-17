@@ -19,6 +19,7 @@ import statusesRoutes from "./routes/statuses.routes.js";
 import requestsRoutes from "./routes/requests.routes.js";
 import conversationsRoutes from "./routes/conversations.routes.js";
 import stocktakingRoutes from "./routes/stocktaking.routes.js";
+import runnerRoutes from "./routes/runner.routes.js";
 import { notFound } from "./middleware/notFound.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { logger } from "./utils/logger.js";
@@ -99,6 +100,7 @@ app.use("/api/inventory", inventoryRoutes);
 app.use("/api/requests", requestsRoutes);
 app.use("/api/conversations", conversationsRoutes);
 app.use("/api/stocktaking", stocktakingRoutes);
+app.use("/api/runner", runnerRoutes);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, { customSiteTitle: "API Docs" }));
 app.use("/", pageRoutes);
 

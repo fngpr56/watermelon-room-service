@@ -1,4 +1,19 @@
-import { connectSessionSocket, fetchWithSession, initializeDashboard } from "/page-main.js";
+import { connectSessionSocket, fetchWithSession, initializeDashboard, navigateTo } from "/page-main.js";
+
+const STAFF_ROLE_LABELS = {
+  manager: "Manager",
+  front_desk: "Front Desk",
+  housekeeping: "Housekeeping",
+  room_service: "Room Service",
+  maintenance: "Maintenance",
+  attendant: "Attendant",
+  receptionist: "Receptionist",
+  runner: "Runner",
+};
+
+function formatStaffRole(role) {
+  return STAFF_ROLE_LABELS[role] || role || "-";
+}
 
 const session = await initializeDashboard({
   expectedUserType: "staff",
@@ -7,12 +22,13 @@ const session = await initializeDashboard({
     return [
       { label: "Staff", value: currentSession.displayName },
       { label: "Email", value: currentSession.email },
-      { label: "Role", value: currentSession.role },
+      { label: "Role", value: formatStaffRole(currentSession.role) },
     ];
   },
 });
 
 const isHousekeeping = session?.role === "housekeeping";
+const isRunner = session?.role === "runner";
 
 const form = document.querySelector("#staff-form");
 const formTitle = document.querySelector("#form-title");
@@ -35,6 +51,7 @@ const roomTableBody = document.querySelector("#room-table-body");
 const roomIdField = document.querySelector("#room-id");
 const roomPasswordField = document.querySelector("#roomPassword");
 const roomTogglePasswordButton = document.querySelector("#room-toggle-password-button");
+const openRunnerPageButton = document.querySelector("#open-runner-page-button");
 
 const inventoryManagementSection = document.querySelector("#inventory-management-section");
 const inventoryForm = document.querySelector("#inventory-form");
@@ -105,6 +122,14 @@ if (inventoryAssignmentSection) {
 if (!isHousekeeping) {
   inventoryManagementSection?.remove();
   inventoryAssignmentSection?.remove();
+}
+
+if (openRunnerPageButton) {
+  openRunnerPageButton.hidden = !isRunner;
+
+  if (!isRunner) {
+    openRunnerPageButton.remove();
+  }
 }
 
 function setStatus(node, message, tone = "") {
@@ -297,7 +322,7 @@ function renderStaffTable() {
     row.append(emailCell);
 
     const roleCell = document.createElement("td");
-    roleCell.textContent = staffUser.role;
+    roleCell.textContent = formatStaffRole(staffUser.role);
     row.append(roleCell);
 
     const phoneCell = document.createElement("td");
@@ -1203,6 +1228,10 @@ conversationRefreshButton.addEventListener("click", async () => {
   } catch (error) {
     setStatus(conversationStatusNode, error.message, "error");
   }
+});
+
+openRunnerPageButton?.addEventListener("click", () => {
+  navigateTo("/runner");
 });
 
 if (session?.staffId) {

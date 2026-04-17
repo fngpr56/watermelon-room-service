@@ -4,7 +4,7 @@
 import { z } from "zod";
 
 import { ApiError } from "../utils/apiError.js";
-import { emitInventoryUpdated } from "../sockets/index.js";
+import { emitInventoryUpdated, emitRunnerRequestUpdated } from "../sockets/index.js";
 import {
   createRoomRequest,
   deleteRoomRequest,
@@ -86,6 +86,11 @@ export async function createRequestRecord(req, res, next) {
         roomId: req.session.roomId,
         requestId: item.id,
         assignmentId: item.inventoryAssignment?.id || null,
+        changeType: "guest-request-created",
+      });
+      emitRunnerRequestUpdated({
+        requestId: item.id,
+        roomId: req.session.roomId,
         changeType: "guest-request-created",
       });
     }
